@@ -41,7 +41,7 @@ cmd() {
 				printf "%s | %s\n" "$n" "${CMD_DESC[$n]:--}"
 			done
 		} | fzf \
-			--delimiter=" | " \
+			--delimiter='\s*\|\s*' \
 			--with-nth=1,2 \
 			--prompt='cmd > ' \
 			--height=100% \
