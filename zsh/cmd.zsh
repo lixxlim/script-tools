@@ -8,16 +8,11 @@ current_script_path="${(%):-%x}"
 
 ##############################################################################################
 
-declare -a CMD_ORDER=(
-	_edit
-	_refresh
-	activate
-)
-
-declare -A CMD_DESC=(
-	[_edit]="Edit cmd file"
-	[_refresh]="Reload cmd file"
-	[activate]="activate python venv"
+typeset -ga CMD_ITEMS
+CMD_ITEMS=(
+	_edit "Edit cmd file"
+	_refresh "Reload cmd file"
+	activate "activate python venv"
 )
 
 ##############################################################################################
@@ -41,25 +36,26 @@ cmd_activate() {
 
 cmd() {
 	command -v fzf >/dev/null 2>&1 || { echo "fzf가 없습니다: brew install fzf"; return 1; }
-	
+
 	local line name fn
+	integer i
 	line=$(
 		{
-			for n in "${CMD_ORDER[@]}"; do
-				printf "%s | %s\n" "$n" "${CMD_DESC[$n]:--}"
+			for (( i = 1; i <= ${#CMD_ITEMS[@]}; i += 2 )); do
+				printf "%s | %s\n" "${CMD_ITEMS[i]}" "${CMD_ITEMS[i + 1]}"
 			done
-		} | fzf 
-			--delimiter='\s*\|\s*' 
-			--with-nth=1,2 
-			--prompt='cmd > ' 
-			--height=100% 
-			--layout=reverse 
-			--border 
-			--cycle 
-			--preview 'echo {2}' 
+		} | fzf \
+			--delimiter='\s*\|\s*' \
+			--with-nth=1,2 \
+			--prompt='cmd > ' \
+			--height=100% \
+			--layout=reverse \
+			--border \
+			--cycle \
+			--preview 'echo {2}' \
 			--preview-window=down:3:wrap
 	) || return $?
-	
+
 	[[ -z "$line" ]] && return 0
 	name="${line%% | *}"
 	fn="cmd_${name}"

@@ -3,16 +3,10 @@
 
 ##############################################################################################
 
-declare -a CMD_ORDER=(
-	_edit
-	_refresh
-	activate
-)
-
-declare -A CMD_DESC=(
-	[_edit]="Edit cmd file"
-	[_refresh]="Reload cmd file"
-	[activate]="activate python venv"
+declare -a CMD_ITEMS=(
+	_edit "Edit cmd file"
+	_refresh "Reload cmd file"
+	activate "activate python venv"
 )
 
 ##############################################################################################
@@ -33,12 +27,12 @@ cmd_activate() {
 
 cmd() {
 	command -v fzf >/dev/null 2>&1 || { echo "fzf가 없습니다: brew install fzf"; return 1; }
-	
-	local line name fn
+
+	local line name fn i
 	line=$(
 		{
-			for n in "${CMD_ORDER[@]}"; do
-				printf "%s | %s\n" "$n" "${CMD_DESC[$n]:--}"
+			for (( i = 0; i < ${#CMD_ITEMS[@]}; i += 2 )); do
+				printf "%s | %s\n" "${CMD_ITEMS[i]}" "${CMD_ITEMS[i + 1]}"
 			done
 		} | fzf \
 			--delimiter='\s*\|\s*' \
@@ -51,7 +45,7 @@ cmd() {
 			--preview 'echo {2}' \
 			--preview-window=down:3:wrap
 	) || return $?
-	
+
 	[[ -z "$line" ]] && return 0
 	name="${line%% | *}"
 	fn="cmd_${name}"
