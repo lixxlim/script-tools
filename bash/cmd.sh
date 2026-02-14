@@ -18,11 +18,11 @@ declare -A CMD_DESC=(
 ##############################################################################################
 
 cmd__edit() {
-	vi /home/lixlim/scripts.d/bashrc.d/cmd.sh
+	vi "${SCRIPT_TOOLS_PATH}/bash/cmd.sh"
 }
 
 cmd__refresh() {
-	source /home/lixlim/scripts.d/bashrc.d/cmd.sh
+	source "${SCRIPT_TOOLS_PATH}/bash/cmd.sh"
 }
 
 cmd_activate() {
