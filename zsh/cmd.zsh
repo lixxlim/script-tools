@@ -46,11 +46,10 @@ cmd() {
 	line=$(
 		{
 			for n in "${CMD_ORDER[@]}"; do
-				printf "%s	%s
-" "$n" "${CMD_DESC[$n]:--}"
+				printf "%s | %s\n" "$n" "${CMD_DESC[$n]:--}"
 			done
 		} | fzf 
-			--delimiter=$'	' 
+			--delimiter=" | " 
 			--with-nth=1,2 
 			--prompt='cmd > ' 
 			--height=100% 
@@ -62,7 +61,7 @@ cmd() {
 	) || return $?
 	
 	[[ -z "$line" ]] && return 0
-	name="${line%%$'	'*}"
+	name="${line%% | *}"
 	fn="cmd_${name}"
 	# Check if function exists in zsh
 	# type -w works for functions in zsh

@@ -38,10 +38,10 @@ cmd() {
 	line=$(
 		{
 			for n in "${CMD_ORDER[@]}"; do
-				printf "%s\t%s\n" "$n" "${CMD_DESC[$n]:--}"
+				printf "%s | %s\n" "$n" "${CMD_DESC[$n]:--}"
 			done
 		} | fzf \
-			--delimiter=$'\t' \
+			--delimiter=" | " \
 			--with-nth=1,2 \
 			--prompt='cmd > ' \
 			--height=100% \
@@ -53,7 +53,7 @@ cmd() {
 	) || return $?
 	
 	[[ -z "$line" ]] && return 0
-	name="${line%%$'\t'*}"
+	name="${line%% | *}"
 	fn="cmd_${name}"
 	typeset -f "$fn" >/dev/null || { echo "함수를 찾을 수 없습니다: $fn"; return 1; }
 	"$fn"
