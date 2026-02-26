@@ -1,10 +1,8 @@
-function convert_encode_to_utf8() {
-    # Check if nkf is installed
-    if ! command -v nkf &> /dev/null; then
-        echo "nkf is not installed. Please install nkf to use this function."
-        return 1
-    fi
-
+# Description: Convert file encoding to UTF-8 in current directory
+# Check if nkf is installed
+if ! command -v nkf &> /dev/null; then
+    echo "nkf is not installed. Please install nkf to use this function."
+else
     for file in *; do
         [ -f "$file" ] || continue
 
@@ -16,4 +14,4 @@ function convert_encode_to_utf8() {
             echo "[ $file ] $encode_before → $encode_after"
         fi
     done
-}
+fi

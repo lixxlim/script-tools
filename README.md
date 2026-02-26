@@ -1,153 +1,81 @@
 # script-tools
 
-이 저장소는 Bash 및 Zsh 환경을 위한 유틸리티 스크립트 모음입니다.
+이 저장소는 Bash 및 Zsh 환경을 위한 유틸리티 스크립트 모음입니다. `fzf`를 기반으로 한 대화형 메뉴 시스템을 통해 다양한 도구를 쉽게 실행할 수 있습니다.
 
-## 사용 방법
+## 주요 특징
 
-이 스크립트들을 사용하려면 셸 설정 파일(예: `~/.bashrc`, `~/.bash_profile` 또는 `~/.zshrc`)에 스크립트를 소스해야 합니다. 각 스크립트를 개별적으로 소스하는 대신, 다음 코드 스니펫을 사용하여 해당 폴더 내의 모든 스크립트를 자동으로 로드할 수 있습니다. `SCRIPT_TOOLS_PATH`를 이 저장소의 실제 경로로 변경해주세요.
+- **대화형 메뉴 (`cmd`)**: `fzf`를 사용하여 `commands/` 디렉토리 내의 모든 스크립트를 메뉴로 보여주고 실행합니다.
+- **자동 감지 및 정렬**: `commands/` 폴더에 스크립트를 추가하면 자동으로 메뉴에 나타나며, 우선순위 설정(`CMD_ORDER`) 및 이름순 정렬을 지원합니다.
+- **인코딩 관리**: 파일 인코딩 확인 및 UTF-8 변환 도구를 포함합니다.
+- **셸 호환성**: Bash와 Zsh 환경을 모두 지원하며, 각 셸의 특성에 최적화되어 있습니다.
+
+## 설치 및 사용 방법
+
+이 스크립트들을 사용하려면 셸 설정 파일(예: `~/.bashrc`, `~/.bash_profile` 또는 `~/.zshrc`)에 `cmd` 스크립트를 소스해야 합니다. `SCRIPT_TOOLS_PATH`를 이 저장소의 실제 경로로 설정해주세요.
 
 ### Bash 스크립트 로드 (.bashrc 또는 .bash_profile)
 
-
-
 ```bash
-
 # script-tools 저장소의 실제 경로를 설정하세요.
-
 export SCRIPT_TOOLS_PATH="/path/to/your/script-tools"
 
+# 메인 cmd 스크립트 로드
+if [ -f "$SCRIPT_TOOLS_PATH/bash/cmd.sh" ]; then
+  source "$SCRIPT_TOOLS_PATH/bash/cmd.sh"
+fi
 
-
-for script in "$SCRIPT_TOOLS_PATH"/bash/*.sh; do
-
-  if [ -f "$script" ]; then
-
-    source "$script"
-
-  fi
-
+# 개별 명령어들을 직접 호출하고 싶다면 아래와 같이 로드할 수 있습니다.
+for script in "$SCRIPT_TOOLS_PATH"/bash/commands/*.sh; do
+  [ -f "$script" ] && source "$script"
 done
-
 ```
-
-
 
 ### Zsh 스크립트 로드 (.zshrc)
 
-
-
 ```zsh
-
 # script-tools 저장소의 실제 경로를 설정하세요.
-
 export SCRIPT_TOOLS_PATH="/path/to/your/script-tools"
 
+# 메인 cmd 스크립트 로드
+if [ -f "$SCRIPT_TOOLS_PATH/zsh/cmd.zsh" ]; then
+  source "$SCRIPT_TOOLS_PATH/zsh/cmd.zsh"
+fi
 
-
-for script in "$SCRIPT_TOOLS_PATH"/zsh/*.zsh; do
-
-  if [ -f "$script" ]; then
-
-    source "$script"
-
-  fi
-
+# 개별 명령어들을 직접 호출하고 싶다면 아래와 같이 로드할 수 있습니다.
+for script in "$SCRIPT_TOOLS_PATH"/zsh/commands/*.zsh; do
+  [ -f "$script" ] && source "$script"
 done
-
 ```
 
+---
 
+## 명령어 실행 (`cmd`)
+
+터미널에서 `cmd`를 입력하면 대화형 메뉴가 나타납니다. `fzf`를 사용하여 원하는 명령을 검색하고 선택하여 실행할 수 있습니다.
+
+### 기본 명령어 목록
+
+*   `_edit`: `cmd` 스크립트를 직접 편집합니다.
+*   `_refresh`: `cmd` 스크립트를 다시 로드하여 변경 사항을 적용합니다.
+*   `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 활성화합니다.
+*   `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
+*   `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환합니다. (`nkf` 필요)
+*   `sdk-use-java`: 설치된 Java 버전을 선택하고 SDKMAN!을 통해 즉시 적용합니다. (`fzf`, `sdkman` 필요)
 
 ---
 
+## 새로운 명령어 추가 방법
 
+새로운 명령어를 추가하려면 `bash/commands/` 또는 `zsh/commands/` 디렉토리에 스크립트 파일을 생성하기만 하면 됩니다.
 
-## Bash 스크립트
-
-
-
-이 섹션은 Bash 사용자를 위한 스크립트를 설명합니다.
-
-
-
-### 인코딩 관련 스크립트 (`check-encode.sh`, `convert-encode-to-utf8.sh`)
-
-*   **스크립트명**: `check-encode.sh` (함수: `check-encode`), `convert-encode-to-utf8.sh` (함수: `convert_encode_to_utf8`)
-
-*   **전제 조건**: `nkf` (macOS에서는 `brew install nkf`로 설치 가능)
-
-*   **개요**:
-
-    *   `check-encode.sh`: 현재 디렉토리 내 모든 파일의 문자 인코딩을 감지하고 출력합니다.
-
-    *   `convert-encode-to-utf8.sh`: 현재 디렉토리 내 모든 파일의 문자 인코딩을 UTF-8로 변환합니다.
-
-*   **결과**:
-
-    *   `check-encode.sh`: 각 파일에 대해 파일명과 감지된 인코딩을 출력합니다 (예: `my_file.txt: UTF-8`).
-
-    *   `convert-encode-to-utf8.sh`: 인코딩이 변경된 각 파일에 대해 파일명과 인코딩 변경 내역을 출력합니다 (예: `my_file.txt: EUC-KR → UTF-8`).
-
-
-
-### `cmd.sh` (함수: `cmd`)
-
-*   **전제 조건**: `fzf` (macOS에서는 `brew install fzf`로 설치 가능)
-
-*   **개요**: `fzf`를 사용하여 미리 정의된 하위 명령들을 실행하기 위한 대화형 메뉴를 제공합니다.
-
-    *   `_edit`: `cmd.sh` 스크립트를 `vi`로 열어 편집합니다.
-
-    *   `_refresh`: `cmd.sh` 스크립트를 다시 로드하여 최근 변경 사항을 적용합니다.
-
-    *   `activate`: 현재 디렉토리에서 `activate` 스크립트를 찾아 소스합니다 (일반적으로 Python 가상 환경에 사용됩니다).
-
-*   **결과**: 선택된 하위 명령을 실행합니다. `activate`의 경우 가상 환경을 활성화합니다.
-
-
+1.  **파일 생성**: `bash/commands/my-command.sh` (Bash용) 또는 `zsh/commands/my-command.zsh` (Zsh용).
+2.  **설명 추가**: 파일 상단에 `# Description: 명령어 설명` 주석을 추가하면 `cmd` 메뉴에 설명이 표시됩니다.
+3.  **메뉴 확인**: `cmd`를 실행하면 새로운 명령어가 자동으로 리스트에 나타납니다.
 
 ---
 
+## 전제 조건
 
-
-## Zsh 스크립트
-
-
-
-이 섹션은 Zsh 사용자를 위한 스크립트를 설명합니다.
-
-
-
-### 인코딩 관련 스크립트 (`check-encode.zsh`, `convert-encode-to-utf8.zsh`)
-
-*   **스크립트명**: `check-encode.zsh` (함수: `check-encode`), `convert-encode-to-utf8.zsh` (함수: `convert_encode_to_utf8`)
-
-*   **전제 조건**: `nkf` (macOS에서는 `brew install nkf`로 설치 가능)
-
-*   **개요**:
-
-    *   `check-encode.zsh`: 현재 디렉토리 내 모든 파일의 문자 인코딩을 감지하고 출력합니다.
-
-    *   `convert-encode-to-utf8.zsh`: 현재 디렉토리 내 모든 파일의 문자 인코딩을 UTF-8로 변환합니다.
-
-*   **결과**:
-
-    *   `check-encode.zsh`: 각 파일에 대해 파일명과 감지된 인코딩을 출력합니다 (예: `my_file.txt: UTF-8`).
-
-    *   `convert-encode-to-utf8.zsh`: 인코딩이 변경된 각 파일에 대해 파일명과 인코딩 변경 내역을 출력합니다 (예: `my_file.txt: EUC-KR → UTF-8`).
-
-
-
-### `cmd.zsh` (함수: `cmd`)
-
-*   **전제 조건**: `fzf` (macOS에서는 `brew install fzf`로 설치 가능)
-
-*   **개요**: `fzf`를 사용하여 미리 정의된 하위 명령들을 실행하기 위한 대화형 메뉴를 제공합니다.
-
-    *   `_edit`: `cmd.zsh` 스크립트를 `vi`로 열어 편집합니다.
-
-    *   `_refresh`: `cmd.zsh` 스크립트를 다시 로드하여 최근 변경 사항을 적용합니다.
-
-    *   `activate`: 현재 디렉토리에서 `activate` 스크립트를 찾아 소스합니다 (일반적으로 Python 가상 환경에 사용됩니다).
-
-*   **결과**: 선택된 하위 명령을 실행합니다. `activate`의 경우 가상 환경을 활성화합니다.
+*   `fzf`: 대화형 메뉴 선택에 사용됩니다. (`brew install fzf`)
+*   `nkf`: 인코딩 확인 및 변환 스크립트에서 사용됩니다. (`brew install nkf`)
+*   `sdkman`: `sdk-use-java` 기능을 위해 필요합니다. (https://sdkman.io/ 에서 설치 가능)

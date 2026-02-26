@@ -1,0 +1,191 @@
+#!/usr/bin/env zsh
+# Description: 오픈라우터로 클로드코드 실행
+
+# 제외 리스트 (글로벌 상수)
+typeset -ga OPENROUTER_EXCLUDE_PATTERNS=(
+  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+  "google/gemma*"
+  "deepseek/deepseek-r1-0528:free"
+  "liquid/lfm*"
+  "nousresearch/hermes-3-llama-3.1-405b:free"
+  "nvidia/nemotron*"
+  "stepfun/step-3.5-flash:free"
+  "meta-llama/llama-3.2-3b-instruct:free"
+  "qwen/qwen3-4b:free"
+  "openai/gpt-oss-*"
+)
+
+# 모델 메모 (글로벌 상수)
+typeset -gA OPENROUTER_MODEL_NOTES=(
+  "arcee-ai/trinity-large-preview:free" "오버리밋가능"
+  "arcee-ai/trinity-mini:free" "오버리밋가능"
+  "z-ai/glm-4.5-air:free" "오버리밋가능"
+  "upstage/solar-pro-3:free" "오버리밋가능"
+)
+
+# 모델을 받아서 클로드코드 실행
+cmd_runner_claude_code_with_openrouter() {
+    emulate -L zsh
+    setopt pipefail
+
+    local model="$1"
+
+    if [[ -z "$model" ]]; then
+        print -u2 "사용법: cmd_runner_claude_code_with_openrouter <model-id>"
+        return 1
+    fi
+
+    if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+        print -u2 "OPENROUTER_API_KEY 환경변수가 필요합니다."
+        return 1
+    fi
+
+    ANTHROPIC_BASE_URL="https://openrouter.ai/api" \
+    ANTHROPIC_AUTH_TOKEN="${OPENROUTER_API_KEY}" \
+    ANTHROPIC_API_KEY="" \
+    claude --model "$model"
+}
+
+# 프리모델 리스트 추출
+cmd_get_openrouter_free_models() {
+  emulate -L zsh
+  setopt pipefail
+
+  if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+    print -u2 "OPENROUTER_API_KEY 환경변수가 필요합니다."
+    return 1
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    print -u2 "jq가 필요합니다. (예: brew install jq)"
+    return 1
+  fi
+
+  curl -fsSL "https://openrouter.ai/api/v1/models" \
+    -H "Authorization: Bearer ${OPENROUTER_API_KEY}" \
+    -H "Accept: application/json" \
+  | jq -r '.data[] | select((.id // "") | endswith(":free")) | .id' \
+  | LC_ALL=C sort -u
+}
+
+# 모델선택창 표시 후 선택된 모델로 러너 실행
+cmd_run_claude_code_with_openrouter() {
+  emulate -L zsh
+  setopt pipefail
+
+  local selected model pat skip memo
+  local -a all_models visible_models
+
+  if ! typeset -f cmd_get_openrouter_free_models >/dev/null 2>&1; then
+    print -u2 "cmd_get_openrouter_free_models 함수가 정의되어 있지 않습니다."
+    return 1
+  fi
+
+  if ! typeset -f cmd_runner_claude_code_with_openrouter >/dev/null 2>&1; then
+    print -u2 "cmd_runner_claude_code_with_openrouter 함수가 정의되어 있지 않습니다."
+    return 1
+  fi
+
+  if ! command -v fzf >/dev/null 2>&1; then
+    print -u2 "fzf가 필요합니다. (예: brew install fzf)"
+    return 1
+  fi
+
+  all_models=("${(@f)$(cmd_get_openrouter_free_models)}")
+
+  if (( ${#all_models[@]} == 0 )); then
+    print -u2 "OpenRouter free 모델 목록이 비어 있습니다."
+    return 1
+  fi
+
+  visible_models=()
+  for model in "${all_models[@]}"; do
+    model="${model//$'\r'/}"
+
+    skip=0
+    for pat in "${OPENROUTER_EXCLUDE_PATTERNS[@]}"; do
+      pat="${pat//$'\r'/}"
+      if [[ "$model" == ${~pat} ]]; then
+        skip=1
+        break
+      fi
+    done
+
+    (( skip )) && continue
+
+    memo="${OPENROUTER_MODEL_NOTES[$model]:-}"
+    memo="${memo//$'\r'/}"
+    memo="${memo//$'\t'/ }"
+
+    if [[ -n "$memo" ]]; then
+      visible_models+=("$model | $memo")
+    else
+      visible_models+=("$model | ")
+    fi
+  done
+
+  if (( ${#visible_models[@]} == 0 )); then
+    print -u2 "제외 리스트 적용 후 선택 가능한 모델이 없습니다."
+    return 1
+  fi
+
+  selected="$(
+    print -rl -- "${visible_models[@]}" | fzf \
+      --delimiter=' \| ' \
+      --with-nth=1,2 \
+      --prompt="OpenRouter free model > " \
+      --layout=reverse \
+      --border \
+      --header="ENTER 선택 / ESC 취소"
+  )" || return 130
+
+  if [[ -z "$selected" ]]; then
+    print -u2 "모델 선택이 취소되었습니다."
+    return 130
+  fi
+
+  model="${selected%% | *}"
+
+  if [[ -z "$model" ]]; then
+    print -u2 "선택된 모델을 파싱하지 못했습니다."
+    return 1
+  fi
+
+  cmd_runner_claude_code_with_openrouter "$model"
+}
+
+cmd_claude_code_with_openrouter() {
+  emulate -L zsh
+  setopt pipefail
+
+  local action="${1:-run}"
+
+  case "$action" in
+    run)
+      shift
+      cmd_run_claude_code_with_openrouter "$@"
+      ;;
+    list)
+      shift
+      cmd_get_openrouter_free_models "$@"
+      ;;
+    -h|--help|help)
+      cat <<'EOF'
+사용법:
+  run_claude_code_with_openrouter.zsh            # fzf로 모델 선택 후 실행
+  run_claude_code_with_openrouter.zsh run        # 위와 동일
+  run_claude_code_with_openrouter.zsh list       # free 모델 목록 출력
+  run_claude_code_with_openrouter.zsh <model-id> # 특정 모델로 바로 실행
+EOF
+      ;;
+    *)
+      cmd_runner_claude_code_with_openrouter "$action"
+      ;;
+  esac
+}
+
+if [[ "${(%):-%N}" == "$0" ]]; then
+  cmd_claude_code_with_openrouter "$@"
+fi
+
+unset OPENROUTER_EXCLUDE_PATTERNS OPENROUTER_MODEL_NOTES

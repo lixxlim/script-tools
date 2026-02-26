@@ -62,7 +62,7 @@ After sourcing, you can run the functions directly (e.g., `check-encode`, `cmd`,
 
 *   **Documentation Consistency**: If anything within the repository (code, files, etc.) is added, edited, or deleted, it is imperative to verify that these changes do not contradict the project's documentation. Should any inconsistencies be found, the user must be clearly informed, and then asked if they wish to proceed with updating the documentation to reflect the current state. The documentation should only be updated if the user explicitly grants permission.
 *   **Language for AGENTS.md/GEMINI.md**: All content added to `AGENTS.md` and `GEMINI.md` must be written in English.
-*   **Cross-Shell Consistency**: If an addition, modification, or deletion occurs in a specific shell folder (e.g., modifying a script in the `bash` folder), it is mandatory to check if a corresponding shell folder with identical functionality exists (e.g., checking if the `zsh` shell has the same functionality). Additions, modifications, or deletions must then be performed concurrently to ensure both remain in an identical state.
+*   **Cross-Shell Consistency**: Bash and Zsh implementations are allowed to differ. However, after any addition, modification, or deletion in one shell's directory (e.g., `bash/`), you must check for differences with the other shell's directory (e.g., `zsh/`). If differences exist, you must clearly report what they are and ask the user whether to synchronize the changes to the other shell or keep them as they are.
 
 ---
 
