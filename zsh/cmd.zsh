@@ -27,8 +27,8 @@ cmd() {
     for f in "$cmd_dir"/*.zsh; do
         [ -f "$f" ] || continue
         local name="${f:t:r}"
-        # Extract description from # Description: line
-        local desc=$(grep -m 1 "^# Description:" "$f" | sed 's/^# Description: //')
+        # Extract description from first '# ' comment line
+        local desc=$(grep -m 1 "^# " "$f" | sed 's/^# //')
         [ -z "$desc" ] && desc="No description"
         
         cmd_files[$name]="$f"

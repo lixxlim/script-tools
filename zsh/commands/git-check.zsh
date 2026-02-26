@@ -1,4 +1,4 @@
-# Description: 깃 브랜치 스위칭
+# 깃 브랜치 스위칭
 if ! (( $+commands[gum] )); then
   echo "❌ `Gum` is not installed."
   return 1

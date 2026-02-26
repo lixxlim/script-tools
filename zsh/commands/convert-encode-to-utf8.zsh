@@ -1,4 +1,4 @@
-# Description: Convert file encoding to UTF-8 in current directory
+# Convert file encoding to UTF-8 in current directory
 # Check if nkf is installed
 if ! command -v nkf &> /dev/null; then
     echo "nkf is not installed. Please install nkf to use this function."

@@ -1,4 +1,4 @@
-# Description: 오픈라우터 토큰 잔량 확인
+# 오픈라우터 토큰 잔량 확인
 
 emulate -L zsh
 setopt pipefail

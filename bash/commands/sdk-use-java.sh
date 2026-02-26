@@ -1,4 +1,4 @@
-# Description: Interactively select and use an installed Java version via SDKMAN!
+# Interactively select and use an installed Java version via SDKMAN!
 # SDKMAN! is often a shell function, so we check for its availability.
 if ! command -v sdk > /dev/null 2>&1; then
   if [[ $(type -t sdk 2>/dev/null) != "function" ]]; then

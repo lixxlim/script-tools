@@ -1,4 +1,4 @@
-# Description: 현재 폴더를 기준으로 파이썬 가상환경 검색
+# 현재 폴더를 기준으로 파이썬 가상환경 검색
 local activate_files
 activate_files="$(
     find "$PWD" -type f \

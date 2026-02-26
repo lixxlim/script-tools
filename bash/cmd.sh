@@ -21,7 +21,7 @@ cmd() {
     for f in "$cmd_dir"/*.sh; do
         [ -f "$f" ] || continue
         local name=$(basename "$f" .sh)
-        local desc=$(grep -m 1 "^# Description:" "$f" | sed 's/^# Description: //')
+        local desc=$(grep -m 1 "^# " "$f" | sed 's/^# //')
         [ -z "$desc" ] && desc="No description"
         
         cmd_files["$name"]="$f"

@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# Description: 오픈라우터로 클로드코드 실행
+# 오픈라우터로 클로드코드 실행
 
 # 제외 리스트 (글로벌 상수)
 typeset -ga OPENROUTER_EXCLUDE_PATTERNS=(

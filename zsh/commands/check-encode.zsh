@@ -1,4 +1,4 @@
-# Description: Check file encoding in current directory
+# Check file encoding in current directory
 # Check if nkf is installed
 if ! command -v nkf &> /dev/null; then
     echo "nkf is not installed. Please install nkf to use this function."

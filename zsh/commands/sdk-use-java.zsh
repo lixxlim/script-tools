@@ -1,4 +1,4 @@
-# Description: sdk로 자바 버전 변경
+# sdk로 자바 버전 변경
 
 emulate -L zsh
 setopt pipefail

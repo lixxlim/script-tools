@@ -69,7 +69,7 @@ done
 새로운 명령어를 추가하려면 `bash/commands/` 또는 `zsh/commands/` 디렉토리에 스크립트 파일을 생성하기만 하면 됩니다.
 
 1.  **파일 생성**: `bash/commands/my-command.sh` (Bash용) 또는 `zsh/commands/my-command.zsh` (Zsh용).
-2.  **설명 추가**: 파일 상단에 `# Description: 명령어 설명` 주석을 추가하면 `cmd` 메뉴에 설명이 표시됩니다.
+2.  **설명 추가**: 파일 상단의 첫 `# 명령어 설명` 주석 줄이 `cmd` 메뉴 설명으로 표시됩니다.
 3.  **메뉴 확인**: `cmd`를 실행하면 새로운 명령어가 자동으로 리스트에 나타납니다.
 
 ---
