@@ -29,6 +29,9 @@ cmd_runner_claude_code_with_openrouter() {
     setopt pipefail
 
     local model="$1"
+    shift
+    local -a claude_options=("$@")
+    local -a claude_cmd
 
     if [[ -z "$model" ]]; then
         print -u2 "사용법: cmd_runner_claude_code_with_openrouter <model-id>"
@@ -40,10 +43,15 @@ cmd_runner_claude_code_with_openrouter() {
         return 1
     fi
 
+    claude_cmd=(claude --model "$model")
+    if (( ${#claude_options[@]} > 0 )); then
+      claude_cmd+=("${claude_options[@]}")
+    fi
+
     ANTHROPIC_BASE_URL="https://openrouter.ai/api" \
     ANTHROPIC_AUTH_TOKEN="${OPENROUTER_API_KEY}" \
     ANTHROPIC_API_KEY="" \
-    claude --model "$model"
+    "${claude_cmd[@]}"
 }
 
 # 프리모델 리스트 추출
@@ -68,13 +76,55 @@ cmd_get_openrouter_free_models() {
   | LC_ALL=C sort -u
 }
 
+# 클로드 옵션 선택(다중선택) 후 인자 리스트 출력
+cmd_select_claude_code_options() {
+  emulate -L zsh
+  setopt pipefail
+
+  local selected option
+  local -a args
+
+  selected="$(
+    print -rl -- \
+      "--permission-mode acceptEdits" \
+      "--dangerously-skip-permissions" \
+      "--worktree" | fzf \
+      --multi \
+      --layout=reverse \
+      --border \
+      --prompt="Claude option > " \
+      --header="TAB/SPACE 토글 · ENTER 선택 · ESC 건너뛰기" \
+      --bind='space:toggle' \
+      --bind='tab:toggle+down,btab:toggle+up'
+  )" || return 0
+
+  [[ -z "$selected" ]] && return 0
+
+  for option in "${(@f)selected}"; do
+    option="${option//$'\r'/}"
+    case "$option" in
+      "--permission-mode acceptEdits")
+        args+=(--permission-mode acceptEdits)
+        ;;
+      "--dangerously-skip-permissions")
+        args+=(--dangerously-skip-permissions)
+        ;;
+      "--worktree")
+        args+=(--worktree)
+        ;;
+    esac
+  done
+
+  print -rl -- "${args[@]}"
+}
+
 # 모델선택창 표시 후 선택된 모델로 러너 실행
 cmd_run_claude_code_with_openrouter() {
   emulate -L zsh
   setopt pipefail
 
   local selected model pat skip memo
-  local -a all_models visible_models
+  local -a all_models visible_models claude_options
 
   if ! typeset -f cmd_get_openrouter_free_models >/dev/null 2>&1; then
     print -u2 "cmd_get_openrouter_free_models 함수가 정의되어 있지 않습니다."
@@ -151,7 +201,9 @@ cmd_run_claude_code_with_openrouter() {
     return 1
   fi
 
-  cmd_runner_claude_code_with_openrouter "$model"
+  claude_options=("${(@f)$(cmd_select_claude_code_options)}")
+
+  cmd_runner_claude_code_with_openrouter "$model" "${claude_options[@]}"
 }
 
 cmd_claude_code_with_openrouter() {
