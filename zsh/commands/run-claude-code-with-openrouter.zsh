@@ -162,11 +162,11 @@ cmd_claude_code_with_openrouter() {
 
   case "$action" in
     run)
-      shift
+      (( $# > 0 )) && shift
       cmd_run_claude_code_with_openrouter "$@"
       ;;
     list)
-      shift
+      (( $# > 0 )) && shift
       cmd_get_openrouter_free_models "$@"
       ;;
     -h|--help|help)
