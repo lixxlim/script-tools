@@ -61,8 +61,7 @@ done
 
 셸별로 `commands/` 구성과 `CMD_ORDER`가 다를 수 있으므로, 실제 노출 항목은 Bash와 Zsh에서 서로 다를 수 있습니다.
 
-*   `_edit`: `cmd` 스크립트를 직접 편집합니다.
-*   `_refresh`: `cmd` 스크립트를 다시 로드하여 변경 사항을 적용합니다.
+*   `_edit`: `cmd` 스크립트를 직접 편집하고 저장 후 자동으로 다시 로드하여 변경 사항을 적용합니다.
 *   `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 활성화합니다.
 *   `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
 *   `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환합니다. (`nkf` 필요)

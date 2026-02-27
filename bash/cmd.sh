@@ -7,7 +7,15 @@ current_script_path="${BASH_SOURCE[0]}"
 ##############################################################################################
 # CMD_ORDER defines the display sequence of menu items.
 # Items in this list appear first; others follow alphabetically at the bottom.
-CMD_ORDER=("_edit" "_refresh" "activate")
+CMD_ORDER=(
+	"_edit"
+	"edit-nginx"
+	"activate"
+	"nvm-use-node"
+	"sdk-use-java"
+	"check-encode"
+	"convert-encode-to-utf8"
+)
 ##############################################################################################
 
 cmd() {
