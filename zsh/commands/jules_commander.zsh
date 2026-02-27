@@ -5,6 +5,7 @@
 # Configuration
 # ------------------------------------------------------------------
 # Ordered keys for display
+cmd_jules_commander() {
 local labels=("List Repos" "List Sessions" "New Remote Session" "Pull Session" "Teleport")
 
 local selected=1
@@ -204,3 +205,10 @@ case "$label" in
         fi
         ;;
 esac
+}
+
+cmd_jules_commander "$@"
+unfunction cmd_jules_commander 2>/dev/null
+unfunction run_command 2>/dev/null
+unfunction select_from_menu 2>/dev/null
+unfunction cleanup 2>/dev/null

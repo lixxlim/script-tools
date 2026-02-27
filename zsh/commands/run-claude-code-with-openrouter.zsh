@@ -236,8 +236,11 @@ EOF
   esac
 }
 
-if [[ "${(%):-%N}" == "$0" ]]; then
-  cmd_claude_code_with_openrouter "$@"
-fi
+cmd_claude_code_with_openrouter "$@"
 
+unfunction cmd_runner_claude_code_with_openrouter 2>/dev/null
+unfunction cmd_get_openrouter_free_models 2>/dev/null
+unfunction cmd_select_claude_code_options 2>/dev/null
+unfunction cmd_run_claude_code_with_openrouter 2>/dev/null
+unfunction cmd_claude_code_with_openrouter 2>/dev/null
 unset OPENROUTER_EXCLUDE_PATTERNS OPENROUTER_MODEL_NOTES
