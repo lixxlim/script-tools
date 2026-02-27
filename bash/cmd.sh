@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 [ -n "$BASH_VERSION" ] || return 0
 
+# Current script path
+current_script_path="${BASH_SOURCE[0]}"
+
 ##############################################################################################
 # CMD_ORDER defines the display sequence of menu items.
 # Items in this list appear first; others follow alphabetically at the bottom.
@@ -10,7 +13,8 @@ CMD_ORDER=("_edit" "_refresh" "activate")
 cmd() {
     command -v fzf >/dev/null 2>&1 || { echo "fzf가 없습니다: brew install fzf"; return 1; }
 
-    local cmd_dir="${SCRIPT_TOOLS_PATH}/bash/commands"
+    # Set script directory relative to this script
+    local cmd_dir="${current_script_path%/*}/commands"
     [ -d "$cmd_dir" ] || { echo "명령어 디렉토리를 찾을 수 없습니다: $cmd_dir"; return 1; }
 
     # 1. Collect all script files and their descriptions
@@ -29,33 +33,32 @@ cmd() {
         files+=("$name")
     done
 
-    # 2. Build ordered list based on CMD_ORDER
+    # 2. Build ordered list
     local final_list=()
-    local seen_names=()
+    local ordered_names=()
+    local remaining_names=()
+    declare -A seen_names
 
-    # Priority items from CMD_ORDER
+    # Priority items from CMD_ORDER (exact match only)
     for ordered_name in "${CMD_ORDER[@]}"; do
-        if [[ -n "${cmd_files[$ordered_name]}" ]]; then
-            final_list+=("$ordered_name | ${cmd_descs[$ordered_name]}")
-            seen_names+=("$ordered_name")
+        if [[ -n "${cmd_files[$ordered_name]-}" ]]; then
+            ordered_names+=("$ordered_name")
+            seen_names["$ordered_name"]=1
         fi
     done
 
     # Remaining items sorted alphabetically
-    local remaining=()
     for name in "${files[@]}"; do
-        local is_seen=0
-        for s in "${seen_names[@]}"; do
-            [[ "$s" == "$name" ]] && { is_seen=1; break; }
-        done
-        [[ $is_seen -eq 0 ]] && remaining+=("$name")
+        if [[ -z "${seen_names[$name]-}" ]]; then
+            remaining_names+=("$name")
+        fi
     done
 
     # Sort remaining names
-    IFS=$'\n' sorted_remaining=($(sort <<<"${remaining[*]}"))
+    IFS=$'\n' sorted_remaining=($(sort <<<"${remaining_names[*]}"))
     unset IFS
 
-    for name in "${sorted_remaining[@]}"; do
+    for name in "${ordered_names[@]}" "${sorted_remaining[@]}"; do
         final_list+=("$name | ${cmd_descs[$name]}")
     done
 
@@ -65,6 +68,7 @@ cmd() {
         printf "%s\n" "${final_list[@]}" | fzf \
             --delimiter='\s*\|\s*' \
             --with-nth=1,2 \
+            --no-sort \
             --prompt='cmd > ' \
             --height=100% \
             --layout=reverse \
@@ -78,5 +82,7 @@ cmd() {
     selected_name="${line%% | *}"
     
     # 4. Execute the selected script via source
-    source "${cmd_files[$selected_name]}"
+    local selected_path="${cmd_files[$selected_name]}"
+    [[ -n "$selected_path" ]] || { echo "선택한 명령 경로를 찾을 수 없습니다: $selected_name"; return 1; }
+    source "$selected_path"
 }
