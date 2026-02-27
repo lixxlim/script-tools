@@ -9,6 +9,14 @@ current_script_path="${(%):-%x}"
 typeset -ga CMD_ORDER
 CMD_ORDER=(
     "run-claude-code-with-openrouter"
+    "print-openrouter-key-limits"
+    "jules_commander"
+    "activate"
+    "sdk-use-java"
+    "nvm-use-node"
+    "check-encode"
+    "convert-encode-to-utf8"
+    "git-check"
 )
 #########################################################################################
 

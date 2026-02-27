@@ -93,10 +93,11 @@ cmd_select_claude_code_options() {
       --layout=reverse \
       --border \
       --prompt="Claude option > " \
-      --header="TAB/SPACE 토글 · ENTER 선택 · ESC 건너뛰기" \
+      --header="SPACE 토글 · ENTER 선택/다음 · ESC 취소" \
       --bind='space:toggle' \
-      --bind='tab:toggle+down,btab:toggle+up'
-  )" || return 0
+      --bind='enter:accept' \
+      --bind='esc:abort'
+  )" || return 130
 
   [[ -z "$selected" ]] && return 0
 
@@ -201,7 +202,7 @@ cmd_run_claude_code_with_openrouter() {
     return 1
   fi
 
-  claude_options=("${(@f)$(cmd_select_claude_code_options)}")
+  claude_options=("${(@f)$(cmd_select_claude_code_options)}") || return $?
 
   cmd_runner_claude_code_with_openrouter "$model" "${claude_options[@]}"
 }
