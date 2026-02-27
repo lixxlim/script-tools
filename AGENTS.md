@@ -55,6 +55,11 @@ After sourcing, you can run the functions directly (e.g., `check-encode`, `cmd`,
 *   **Shell Compatibility:** Efforts are made to ensure similar functionality across Bash and Zsh versions where applicable, adapting to shell-specific syntax when necessary (e.g., dynamic script path resolution in `cmd.zsh`).
 *   **Prerequisites:** External tools like `nkf` and `fzf` are checked for availability within the scripts, and users are prompted to install them if missing.
 *   **Documentation:** The `README.md` file serves as comprehensive user documentation, detailing each script's purpose, prerequisites, and expected output.
+*   **Git Commit Conventions:** Follow these prefixes for commit messages:
+    *   `Add: `: Adding a new script.
+    *   `Update: `: Updating an existing script.
+    *   `Delete: `: Deleting an existing script.
+    *   `Chore: `: Changes to non-script files (e.g., README, documentation, or other configuration files).
 
 ---
 
