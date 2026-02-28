@@ -13,11 +13,20 @@ codex_exec() {
     if (( $# > 0 )); then
         prompt_text="$*"
     elif command -v gum >/dev/null 2>&1; then
-        prompt_text="$(
+        if ! prompt_text="$(
             gum input \
                 --prompt "Codex> " \
-                --placeholder "Codex에 전달할 한 줄 프롬프트를 입력하세요."
-        )" || return $?
+                --placeholder "Codex에 전달할 한 줄 프롬프트를 입력하세요." \
+                2>/dev/null
+        )"; then
+            local gum_status=$?
+            if (( gum_status == 130 )); then
+                return $gum_status
+            fi
+            print -u2 -- "gum 입력이 실패하여 기본 한 줄 입력 모드로 전환합니다."
+            print -n -- "Codex> "
+            IFS= read -r prompt_text || return $?
+        fi
     else
         print -r -- "gum이 없어 기본 한 줄 입력 모드로 전환합니다."
         print -n -- "Codex> "
