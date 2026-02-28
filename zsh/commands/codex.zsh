@@ -9,15 +9,23 @@ codex_exec() {
     fi
 
     local prompt_text=""
+    local gum_width="${COLUMNS:-}"
 
     if (( $# > 0 )); then
         prompt_text="$*"
     elif command -v gum >/dev/null 2>&1; then
+        if [[ -z "$gum_width" || "$gum_width" != <-> || "$gum_width" -le 0 ]]; then
+            gum_width="$(tput cols 2>/dev/null || print -n -- '80')"
+        fi
+        if [[ -z "$gum_width" || "$gum_width" != <-> || "$gum_width" -le 0 ]]; then
+            gum_width="80"
+        fi
+
         if ! prompt_text="$(
             gum input \
                 --prompt "Codex> " \
                 --placeholder "Codex에 전달할 한 줄 프롬프트를 입력하세요." \
-                2>/dev/null
+                --width "$gum_width"
         )"; then
             local gum_status=$?
             if (( gum_status == 130 )); then
