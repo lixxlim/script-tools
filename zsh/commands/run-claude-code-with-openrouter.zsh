@@ -24,7 +24,7 @@ typeset -gA OPENROUTER_MODEL_NOTES=(
 )
 
 # 모델을 받아서 클로드코드 실행
-cmd_runner_claude_code_with_openrouter() {
+runner_claude_code_with_openrouter() {
     emulate -L zsh
     setopt pipefail
 
@@ -34,7 +34,7 @@ cmd_runner_claude_code_with_openrouter() {
     local -a claude_cmd
 
     if [[ -z "$model" ]]; then
-        print -u2 "사용법: cmd_runner_claude_code_with_openrouter <model-id>"
+        print -u2 "사용법: runner_claude_code_with_openrouter <model-id>"
         return 1
     fi
 
@@ -55,7 +55,7 @@ cmd_runner_claude_code_with_openrouter() {
 }
 
 # 프리모델 리스트 추출
-cmd_get_openrouter_free_models() {
+get_openrouter_free_models() {
   emulate -L zsh
   setopt pipefail
 
@@ -77,7 +77,7 @@ cmd_get_openrouter_free_models() {
 }
 
 # 클로드 옵션 선택(다중선택) 후 인자 리스트 출력
-cmd_select_claude_code_options() {
+select_claude_code_options() {
   emulate -L zsh
   setopt pipefail
 
@@ -120,20 +120,20 @@ cmd_select_claude_code_options() {
 }
 
 # 모델선택창 표시 후 선택된 모델로 러너 실행
-cmd_run_claude_code_with_openrouter() {
+run_claude_code_with_openrouter() {
   emulate -L zsh
   setopt pipefail
 
   local selected model pat skip memo
   local -a all_models visible_models claude_options
 
-  if ! typeset -f cmd_get_openrouter_free_models >/dev/null 2>&1; then
-    print -u2 "cmd_get_openrouter_free_models 함수가 정의되어 있지 않습니다."
+  if ! typeset -f get_openrouter_free_models >/dev/null 2>&1; then
+    print -u2 "get_openrouter_free_models 함수가 정의되어 있지 않습니다."
     return 1
   fi
 
-  if ! typeset -f cmd_runner_claude_code_with_openrouter >/dev/null 2>&1; then
-    print -u2 "cmd_runner_claude_code_with_openrouter 함수가 정의되어 있지 않습니다."
+  if ! typeset -f runner_claude_code_with_openrouter >/dev/null 2>&1; then
+    print -u2 "runner_claude_code_with_openrouter 함수가 정의되어 있지 않습니다."
     return 1
   fi
 
@@ -142,7 +142,7 @@ cmd_run_claude_code_with_openrouter() {
     return 1
   fi
 
-  all_models=("${(@f)$(cmd_get_openrouter_free_models)}")
+  all_models=("${(@f)$(get_openrouter_free_models)}")
 
   if (( ${#all_models[@]} == 0 )); then
     print -u2 "OpenRouter free 모델 목록이 비어 있습니다."
@@ -202,12 +202,12 @@ cmd_run_claude_code_with_openrouter() {
     return 1
   fi
 
-  claude_options=("${(@f)$(cmd_select_claude_code_options)}") || return $?
+  claude_options=("${(@f)$(select_claude_code_options)}") || return $?
 
-  cmd_runner_claude_code_with_openrouter "$model" "${claude_options[@]}"
+  runner_claude_code_with_openrouter "$model" "${claude_options[@]}"
 }
 
-cmd_claude_code_with_openrouter() {
+claude_code_with_openrouter() {
   emulate -L zsh
   setopt pipefail
 
@@ -216,11 +216,11 @@ cmd_claude_code_with_openrouter() {
   case "$action" in
     run)
       (( $# > 0 )) && shift
-      cmd_run_claude_code_with_openrouter "$@"
+      run_claude_code_with_openrouter "$@"
       ;;
     list)
       (( $# > 0 )) && shift
-      cmd_get_openrouter_free_models "$@"
+      get_openrouter_free_models "$@"
       ;;
     -h|--help|help)
       cat <<'EOF'
@@ -232,16 +232,16 @@ cmd_claude_code_with_openrouter() {
 EOF
       ;;
     *)
-      cmd_runner_claude_code_with_openrouter "$action"
+      runner_claude_code_with_openrouter "$action"
       ;;
   esac
 }
 
-cmd_claude_code_with_openrouter "$@"
+claude_code_with_openrouter "$@"
 
-unfunction cmd_runner_claude_code_with_openrouter 2>/dev/null
-unfunction cmd_get_openrouter_free_models 2>/dev/null
-unfunction cmd_select_claude_code_options 2>/dev/null
-unfunction cmd_run_claude_code_with_openrouter 2>/dev/null
-unfunction cmd_claude_code_with_openrouter 2>/dev/null
+unfunction runner_claude_code_with_openrouter 2>/dev/null
+unfunction get_openrouter_free_models 2>/dev/null
+unfunction select_claude_code_options 2>/dev/null
+unfunction run_claude_code_with_openrouter 2>/dev/null
+unfunction claude_code_with_openrouter 2>/dev/null
 unset OPENROUTER_EXCLUDE_PATTERNS OPENROUTER_MODEL_NOTES

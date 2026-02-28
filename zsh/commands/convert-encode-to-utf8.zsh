@@ -1,5 +1,5 @@
 # Convert file encoding to UTF-8 in current directory
-cmd_convert_encode_to_utf8() {
+convert_encode_to_utf8() {
     if ! command -v nkf >/dev/null 2>&1; then
         echo "nkf is not installed. Please install nkf to use this function."
         return 1
@@ -19,5 +19,5 @@ cmd_convert_encode_to_utf8() {
     done
 }
 
-cmd_convert_encode_to_utf8 "$@"
-unfunction cmd_convert_encode_to_utf8 2>/dev/null
+convert_encode_to_utf8 "$@"
+unfunction convert_encode_to_utf8 2>/dev/null

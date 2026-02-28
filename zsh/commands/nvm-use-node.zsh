@@ -1,5 +1,5 @@
 # Interactively switch Node version via nvm
-cmd_nvm_use_node() {
+nvm_use_node() {
     emulate -L zsh
     setopt pipefail
 
@@ -69,5 +69,5 @@ cmd_nvm_use_node() {
     node -v 2>/dev/null || true
 }
 
-cmd_nvm_use_node "$@"
-unfunction cmd_nvm_use_node 2>/dev/null
+nvm_use_node "$@"
+unfunction nvm_use_node 2>/dev/null

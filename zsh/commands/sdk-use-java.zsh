@@ -1,5 +1,5 @@
 # sdk로 자바 버전 변경
-cmd_sdk_use_java() {
+sdk_use_java() {
     emulate -L zsh
     setopt pipefail
 
@@ -56,5 +56,5 @@ cmd_sdk_use_java() {
     printf "\n$(java --version)\n"
 }
 
-cmd_sdk_use_java "$@"
-unfunction cmd_sdk_use_java 2>/dev/null
+sdk_use_java "$@"
+unfunction sdk_use_java 2>/dev/null
