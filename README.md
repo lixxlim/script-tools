@@ -64,8 +64,10 @@ done
 *   `_edit`: `cmd` 스크립트를 직접 편집하고 저장 후 자동으로 다시 로드하여 변경 사항을 적용합니다.
 *   `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 활성화합니다.
 *   `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
+*   `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 *   `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환합니다. (`nkf` 필요)
 *   `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
+*   `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
 *   `nvm-use-node`: 설치된 Node.js 버전을 선택하고 `nvm use`로 즉시 전환합니다. (`fzf`, `nvm` 필요)
 *   `sdk-use-java`: 설치된 Java 버전을 선택하고 SDKMAN!을 통해 즉시 적용합니다. (`fzf`, `sdkman` 필요)
 
@@ -84,6 +86,9 @@ done
 ## 전제 조건
 
 *   `fzf`: 대화형 메뉴 선택에 사용됩니다. (`brew install fzf`)
+*   `gum` (선택): `codex`, `gemini` 명령의 한 줄 입력 UI 및 스피너 표시를 제공합니다. (`brew install gum`)
 *   `nkf`: 인코딩 확인 및 변환 스크립트에서 사용됩니다. (`brew install nkf`)
+*   `codex`: `codex` 명령 실행에 필요합니다.
+*   `gemini`: `gemini` 명령 실행에 필요합니다.
 *   `nvm`: `nvm-use-node` 기능을 위해 필요합니다. (https://github.com/nvm-sh/nvm 에서 설치 가능)
 *   `sdkman`: `sdk-use-java` 기능을 위해 필요합니다. (https://sdkman.io/ 에서 설치 가능)
