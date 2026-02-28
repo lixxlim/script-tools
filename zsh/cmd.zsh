@@ -27,6 +27,14 @@ cmd() {
     local cmd_dir="${current_script_path:h}/commands"
     [ -d "$cmd_dir" ] || { echo "명령어 디렉토리를 찾을 수 없습니다: $cmd_dir"; return 1; }
 
+    # If an argument is provided, check if it matches a command name
+    if [[ -n "$1" && "$1" != */* && -f "$cmd_dir/$1.zsh" ]]; then
+        local target_cmd="$cmd_dir/$1.zsh"
+        shift
+        source "$target_cmd" "$@"
+        return $?
+    fi
+
     # 1. Collect all script files and their descriptions
     typeset -A cmd_files
     typeset -A cmd_descs
