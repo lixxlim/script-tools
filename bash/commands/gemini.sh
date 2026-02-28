@@ -21,7 +21,6 @@ gemini_exec() {
         if ! prompt_text="$(
             gum input \
                 --prompt "Gemini> " \
-                --placeholder "Gemini에 전달할 한 줄 프롬프트를 입력하세요." \
                 --width "$gum_width"
         )"; then
             local gum_status=$?
