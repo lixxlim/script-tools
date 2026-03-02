@@ -15,6 +15,7 @@ CMD_ORDER=(
 	"sdk-use-java"
 	"check-encode"
 	"convert-encode-to-utf8"
+	"pdf-translator"
 )
 ##############################################################################################
 
