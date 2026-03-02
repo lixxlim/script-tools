@@ -13,6 +13,7 @@ typeset -ga OPENROUTER_EXCLUDE_PATTERNS=(
   "meta-llama/llama-3.2-3b-instruct:free"
   "qwen/qwen3-4b:free"
   "openai/gpt-oss-*"
+  "meta-llama/llama-3.3-70b-*"
 )
 
 # 모델 메모 (글로벌 상수)
