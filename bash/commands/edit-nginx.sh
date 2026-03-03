@@ -1,6 +1,7 @@
 # Edit Nginx configuration
 edit_nginx() {
-    sudo vi /usr/local/etc/nginx/nginx.conf
+    sudo vi /etc/nginx || return $?
+    sudo nginx -t
 }
 
 edit_nginx "$@"
