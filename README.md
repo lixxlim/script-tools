@@ -56,7 +56,7 @@ fi
 - `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. (`fzf` 필요)
 - `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
-- `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환합니다. (`nkf` 필요)
+- `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
 - `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `nvm-use-node`: 설치된 Node.js 버전을 선택하고 `nvm use`로 즉시 전환합니다. (`fzf`, `nvm` 필요)
@@ -72,12 +72,13 @@ fi
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `git-check`: 현재 저장소의 브랜치를 `fzf`로 선택해 `git switch`를 실행합니다. (`fzf` 필요)
 - `idea`: macOS에서 현재 디렉토리를 IntelliJ IDEA로 엽니다.
-- `jules_commander`: 예제 명령으로 고정 메시지를 출력합니다.
+- `jules_commander`: Jules CLI를 사용하여 리모트 세션 및 레포지토리를 관리하는 대화형 메뉴를 제공합니다.
 - `nvm-use-node`: 설치된 Node.js 버전을 `fzf`로 선택해 `nvm use`로 전환합니다. (`nvm`, `fzf` 필요)
 - `pdf-translator`: PDF 텍스트를 추출해 번역하고 결과를 텍스트 파일로 저장합니다. (`python3`, `pymupdf`, `fzf` 필요)
 - `print-openrouter-key-limits`: `OPENROUTER_API_KEY`로 OpenRouter 키 사용량/한도 정보를 조회합니다. (`curl` 필요)
 - `run-claude-code-with-openrouter`: OpenRouter free 모델을 조회/선택해 Claude Code를 실행합니다. 모델 목록(`list`) 조회와 직접 모델 지정 실행도 지원합니다. (`OPENROUTER_API_KEY`, `claude`, `curl`, `jq`, `fzf` 필요)
 - `sdk-use-java`: 설치된 Java 후보를 선택해 SDKMAN 기본 버전으로 전환합니다. (`sdkman`, `gum` 또는 `fzf` 필요)
+- `transcribe`: 음원 파일을 `fzf`로 선택해 `mlx_whisper`로 전사하고 타임스탬프 텍스트 파일을 생성합니다. (`python3`, `ffmpeg`, `fzf`, `mlx-whisper` 필요)
 
 ---
 
@@ -97,8 +98,10 @@ fi
 - `fzf`: 대화형 메뉴 선택에 사용됩니다. (`brew install fzf`)
 - `gum` (선택): `codex`, `gemini` 명령의 한 줄 입력 UI 및 스피너 표시를 제공합니다. (`brew install gum`)
 - `nkf`: 인코딩 확인 및 변환 스크립트에서 사용됩니다. (`brew install nkf`)
-- `python3`: `pdf-translator` 명령 실행에 필요합니다.
+- `python3`: `pdf-translator`, `transcribe` 명령 실행에 필요합니다.
 - `pymupdf` (Python 라이브러리): PDF 텍스트 추출에 필요합니다. (`pip install pymupdf`)
+- `ffmpeg`: `transcribe`에서 오디오 전처리/디코딩에 필요합니다. (`brew install ffmpeg`)
+- `mlx-whisper` (Python 라이브러리): `transcribe` 전사 실행에 필요합니다. (`pip install mlx-whisper`)
 - `codex`: `codex` 명령 실행에 필요합니다.
 - `gemini`: `gemini` 명령 실행에 필요합니다.
 - `nvm`: `nvm-use-node` 기능을 위해 필요합니다. (https://github.com/nvm-sh/nvm 에서 설치 가능)
