@@ -13,6 +13,7 @@ CMD_ORDER=(
 	"activate"
 	"nvm-use-node"
 	"sdk-use-java"
+	"spring-init"
 	"is-merged"
 	"git-graph"
 	"check-encode"

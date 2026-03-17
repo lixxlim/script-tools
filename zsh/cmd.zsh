@@ -10,6 +10,7 @@ typeset -ga CMD_ORDER
 CMD_ORDER=(
     "run-claude-code-with-openrouter"
     "print-openrouter-key-limits"
+    "spring-init"
     "jules_commander"
     "activate"
     "sdk-use-java"

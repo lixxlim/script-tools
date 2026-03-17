@@ -55,23 +55,24 @@ fi
 - `_edit`: `cmd` 스크립트를 직접 편집하고 저장 후 자동으로 다시 로드하여 변경 사항을 적용합니다.
 - `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. (`fzf` 필요)
 - `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
+- `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
-- `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
 - `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini -p "<prompt>"` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
 - `nvm-use-node`: 설치된 Node.js 버전을 선택하고 `nvm use`로 즉시 전환합니다. (`fzf`, `nvm` 필요)
 - `pdf-translator`: PDF 파일을 텍스트로 추출하여 번역합니다. (`python3`, `pymupdf`, `fzf` 필요)
 - `sdk-use-java`: 설치된 Java 버전을 선택하고 SDKMAN!을 통해 즉시 적용합니다. (`fzf`, `sdkman` 필요)
+- `spring-init`: Spring Initializr API를 사용하여 Spring Boot 프로젝트를 대화형으로 생성하고 현재 위치에 압축을 풉니다. (`curl`, `fzf`, `jq`, `tar` 필요)
 
 #### Zsh
 
 - `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. (`fzf` 필요)
 - `check-encode`: 현재 디렉토리 파일 인코딩을 출력합니다. (`nkf` 필요)
+- `convert-encode-to-utf8`: 현재 디렉토리 파일을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 받아 `codex exec -- "<prompt>"`를 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
-- `convert-encode-to-utf8`: 현재 디렉토리 파일을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `git-check`: 현재 저장소의 브랜치를 `fzf`로 선택해 `git switch`를 실행합니다. (`fzf` 필요)
 - `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
@@ -82,6 +83,7 @@ fi
 - `print-openrouter-key-limits`: `OPENROUTER_API_KEY`로 OpenRouter 키 사용량/한도 정보를 조회합니다. (`curl` 필요)
 - `run-claude-code-with-openrouter`: OpenRouter free 모델을 조회/선택해 Claude Code를 실행합니다. 모델 목록(`list`) 조회와 직접 모델 지정 실행도 지원합니다. (`OPENROUTER_API_KEY`, `claude`, `curl`, `jq`, `fzf` 필요)
 - `sdk-use-java`: 설치된 Java 후보를 선택해 SDKMAN 기본 버전으로 전환합니다. (`sdkman`, `gum` 또는 `fzf` 필요)
+- `spring-init`: Spring Initializr API를 사용하여 Spring Boot 프로젝트를 대화형으로 생성하고 현재 위치에 압축을 풉니다. (`curl`, `fzf`, `jq`, `tar` 필요)
 - `transcribe`: 음원 파일을 `fzf`로 선택해 `mlx_whisper`로 전사하고 타임스탬프 텍스트 파일을 생성합니다. (`python3`, `ffmpeg`, `fzf`, `mlx-whisper` 필요)
 
 ---
@@ -108,5 +110,7 @@ fi
 - `mlx-whisper` (Python 라이브러리): `transcribe` 전사 실행에 필요합니다. (`pip install mlx-whisper`)
 - `codex`: `codex` 명령 실행에 필요합니다.
 - `gemini`: `gemini` 명령 실행에 필요합니다.
+- `jq`: `run-claude-code-with-openrouter`, `spring-init` 등에서 JSON 파싱에 필요합니다. (`brew install jq`)
+- `tar`: `spring-init`에서 프로젝트 압축 해제에 필요합니다.
 - `nvm`: `nvm-use-node` 기능을 위해 필요합니다. (https://github.com/nvm-sh/nvm 에서 설치 가능)
 - `sdkman`: `sdk-use-java` 기능을 위해 필요합니다. (https://sdkman.io/ 에서 설치 가능)
