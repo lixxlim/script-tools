@@ -59,7 +59,8 @@ fi
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
-- `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
+- `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini -p "<prompt>"` 필요, `gum` 있으면 입력/스피너 UI 제공)
+- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
 - `nvm-use-node`: 설치된 Node.js 버전을 선택하고 `nvm use`로 즉시 전환합니다. (`fzf`, `nvm` 필요)
 - `pdf-translator`: PDF 파일을 텍스트로 추출하여 번역합니다. (`python3`, `pymupdf`, `fzf` 필요)
 - `sdk-use-java`: 설치된 Java 버전을 선택하고 SDKMAN!을 통해 즉시 적용합니다. (`fzf`, `sdkman` 필요)
@@ -73,6 +74,7 @@ fi
 - `convert-encode-to-utf8`: 현재 디렉토리 파일을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `git-check`: 현재 저장소의 브랜치를 `fzf`로 선택해 `git switch`를 실행합니다. (`fzf` 필요)
+- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
 - `idea`: macOS에서 현재 디렉토리를 IntelliJ IDEA로 엽니다.
 - `jules_commander`: Jules CLI를 사용하여 리모트 세션 및 레포지토리를 관리하는 대화형 메뉴를 제공합니다.
 - `nvm-use-node`: 설치된 Node.js 버전을 `fzf`로 선택해 `nvm use`로 전환합니다. (`nvm`, `fzf` 필요)

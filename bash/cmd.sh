@@ -14,6 +14,7 @@ CMD_ORDER=(
 	"nvm-use-node"
 	"sdk-use-java"
 	"is-merged"
+	"git-graph"
 	"check-encode"
 	"convert-encode-to-utf8"
 	"pdf-translator"
