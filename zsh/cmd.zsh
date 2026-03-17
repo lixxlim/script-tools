@@ -17,6 +17,7 @@ CMD_ORDER=(
     "check-encode"
     "convert-encode-to-utf8"
     "git-check"
+    "is-merged"
     "pdf-translator"
 )
 #########################################################################################

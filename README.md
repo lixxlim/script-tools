@@ -55,6 +55,7 @@ fi
 - `_edit`: `cmd` 스크립트를 직접 편집하고 저장 후 자동으로 다시 로드하여 변경 사항을 적용합니다.
 - `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. (`fzf` 필요)
 - `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
+- `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
@@ -67,6 +68,7 @@ fi
 
 - `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. (`fzf` 필요)
 - `check-encode`: 현재 디렉토리 파일 인코딩을 출력합니다. (`nkf` 필요)
+- `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 받아 `codex exec -- "<prompt>"`를 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `convert-encode-to-utf8`: 현재 디렉토리 파일을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)

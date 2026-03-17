@@ -13,6 +13,7 @@ CMD_ORDER=(
 	"activate"
 	"nvm-use-node"
 	"sdk-use-java"
+	"is-merged"
 	"check-encode"
 	"convert-encode-to-utf8"
 	"pdf-translator"
