@@ -29,7 +29,8 @@ spring_init() {
         local height="${3:-40%}"
         local selected
         selected=$(echo "$METADATA" | jq -r "$jq_query" | fzf --prompt="$prompt" --height="$height" --reverse --border)
-        echo "$selected" | awk '{print $1}'
+        # 선택된 값에서 .RELEASE 제거 후 첫 번째 단어(ID) 추출
+        echo "$selected" | sed 's/\.RELEASE//g' | awk '{print $1}'
     }
 
     # 4. 프로젝트 유형, 언어, 부트 버전 선택
@@ -40,7 +41,8 @@ spring_init() {
     language=$(select_option '.language.values[] | "\(.id) ( \(.name) )"' "언어 선택: ")
     [[ -z "$language" ]] && return 0
     
-    bootVersion=$(select_option '.bootVersion.values[] | "\(.id) ( \(.name) )"' "스프링 부트 버전 선택: ")
+    # 부트 버전 목록에서도 .RELEASE 제거하여 표시
+    bootVersion=$(select_option '.bootVersion.values[] | "\(.id | sub("\\.RELEASE$"; "")) ( \(.name | sub(" \\(RELEASE\\)"; "")) )"' "스프링 부트 버전 선택: ")
     [[ -z "$bootVersion" ]] && return 0
 
     # 5. 텍스트 입력들
