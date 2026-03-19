@@ -10,17 +10,21 @@ typeset -ga CMD_ORDER
 CMD_ORDER=(
     "run-claude-code-with-openrouter"
     "print-openrouter-key-limits"
-    "spring-init"
     "jules_commander"
-    "activate"
     "sdk-use-java"
     "nvm-use-node"
-    "check-encode"
-    "convert-encode-to-utf8"
     "git-check"
     "git-graph"
     "is-merged"
+    "activate"
+    "idea"
+    "codex"
+    "gemini"
+    "spring-init"
     "pdf-translator"
+    "transcribe"
+    "check-encode"
+    "convert-encode-to-utf8"
 )
 #########################################################################################
 

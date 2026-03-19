@@ -10,15 +10,17 @@ current_script_path="${BASH_SOURCE[0]}"
 CMD_ORDER=(
 	"_edit"
 	"edit-nginx"
-	"activate"
-	"nvm-use-node"
 	"sdk-use-java"
-	"spring-init"
-	"is-merged"
+	"nvm-use-node"
 	"git-graph"
+	"is-merged"
+	"activate"
+	"codex"
+	"gemini"
+	"spring-init"
+	"pdf-translator"
 	"check-encode"
 	"convert-encode-to-utf8"
-	"pdf-translator"
 )
 ##############################################################################################
 
