@@ -36,7 +36,7 @@ spring_init() {
     local type language bootVersion
     type=$(select_option '.type.values[] | select(.tags.format == "project") | "\(.id)\t\(.name)"' "프로젝트 유형 선택: ") || return 0
     language=$(select_option '.language.values[] | "\(.id)\t\(.name)"' "언어 선택: ") || return 0
-    bootVersion=$(select_option '.bootVersion.values[] | "\(.id)\t\(.name)"' "스프링 부트 버전 선택: ") || return 0
+    bootVersion=$(select_option '.bootVersion.values[] | "\(.id | sub(".RELEASE$"; ""))\t\(.name)"' "스프링 부트 버전 선택: ") || return 0
 
     # 5. 텍스트 입력들
     local groupId artifactId name description packageName
@@ -48,13 +48,11 @@ spring_init() {
     read -r artifactId
     artifactId=${artifactId:-demo}
 
-    printf "Project Name [$artifactId]: "
-    read -r name
-    name=${name:-$artifactId}
+    # Project Name은 Artifact ID와 동일하게 설정 (입력 생략)
+    name="$artifactId"
 
-    printf "Description [Demo project for Spring Boot]: "
-    read -r description
-    description=${description:-Demo project for Spring Boot}
+    # Description은 기본값 설정 (입력 생략)
+    description="Demo project for Spring Boot"
 
     printf "Package Name [$groupId.$artifactId]: "
     read -r packageName
