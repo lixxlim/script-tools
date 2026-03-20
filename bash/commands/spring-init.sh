@@ -117,13 +117,8 @@ spring_init() {
         return 1
     fi
 
-    if [[ -z "$target_dir" ]]; then
-        # 입력이 없으면 현재 폴더에 직접 해제 (최상위 디렉토리 스트립)
-        tar -xzvf "$tmp_file" --strip-components=1
-    else
-        # 입력이 있으면 해당 이름의 폴더를 생성하여 해제
-        tar -xzvf "$tmp_file"
-    fi
+    # 압축 해제
+    tar -xzvf "$tmp_file"
 
     rm -f "$tmp_file"
 
