@@ -28,22 +28,18 @@ spring_init() {
         local prompt="$2"
         local height="${3:-40%}"
         local selected
-        selected=$(echo "$METADATA" | jq -r "$jq_query" | fzf --prompt="$prompt" --height="$height" --reverse --border)
-        # 선택된 값에서 .RELEASE 제거 후 첫 번째 단어(ID) 추출
-        echo "$selected" | sed 's/\.RELEASE//g' | awk '{print $1}'
+        # ID와 이름을 탭으로 구분하여 가져와서 fzf로 선택
+        selected=$(echo "$METADATA" | jq -r "$jq_query" | fzf --prompt="$prompt" --height="$height" --reverse --border --delimiter='\t' --with-nth=2)
+        [[ -z "$selected" ]] && return 1
+        # 탭 이전의 ID만 추출
+        echo "$selected" | awk -F'\t' '{print $1}'
     }
 
     # 4. 프로젝트 유형, 언어, 부트 버전 선택
     local type language bootVersion
-    type=$(select_option '.type.values[] | "\(.id) ( \(.name) )"' "프로젝트 유형 선택: ")
-    [[ -z "$type" ]] && return 0
-    
-    language=$(select_option '.language.values[] | "\(.id) ( \(.name) )"' "언어 선택: ")
-    [[ -z "$language" ]] && return 0
-    
-    # 부트 버전 목록에서도 .RELEASE 제거하여 표시
-    bootVersion=$(select_option '.bootVersion.values[] | "\(.id | sub("\\.RELEASE$"; "")) ( \(.name | sub(" \\(RELEASE\\)"; "")) )"' "스프링 부트 버전 선택: ")
-    [[ -z "$bootVersion" ]] && return 0
+    type=$(select_option '.type.values[] | "\(.id)\t\(.name)"' "프로젝트 유형 선택: ") || return 0
+    language=$(select_option '.language.values[] | "\(.id)\t\(.name)"' "언어 선택: ") || return 0
+    bootVersion=$(select_option '.bootVersion.values[] | "\(.id)\t\(.name)"' "스프링 부트 버전 선택: ") || return 0
 
     # 5. 텍스트 입력들
     local groupId artifactId name description packageName
@@ -67,24 +63,21 @@ spring_init() {
 
     # 6. 자바 버전, 패키징 선택
     local javaVersion packaging
-    javaVersion=$(select_option '.javaVersion.values[] | "\(.id) ( \(.name) )"' "자바 버전 선택: ")
-    [[ -z "$javaVersion" ]] && return 0
-    
-    packaging=$(select_option '.packaging.values[] | "\(.id) ( \(.name) )"' "패키징 방식 선택: ")
-    [[ -z "$packaging" ]] && return 0
+    javaVersion=$(select_option '.javaVersion.values[] | "\(.id)\t\(.name)"' "자바 버전 선택: ") || return 0
+    packaging=$(select_option '.packaging.values[] | "\(.id)\t\(.name)"' "패키징 방식 선택: ") || return 0
 
     # 7. 의존성 선택 (멀티 선택, 프리뷰창에 설명 표시)
     local dependencies
-    dependencies=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.name) ( \(.id) )\t\(.description)"' | \
+    dependencies=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.id)\t\(.name) ( \(.id) )\t\(.description)"' | \
         fzf -m \
             --bind 'space:toggle' \
             --delimiter='\t' \
-            --with-nth=1 \
-            --preview 'echo {2}' \
+            --with-nth=2 \
+            --preview 'echo {3}' \
             --preview-window=down:3:wrap \
             --prompt="의존성 선택 (Space로 다중 선택, Enter로 확정): " \
             --height=60% --reverse --border | \
-        awk -F '[()]' '{print $(NF-1)}' | tr -d ' ' | paste -sd "," -)
+        awk -F'\t' '{print $1}' | paste -sd "," -)
 
     # 8. 다운로드 및 압축 해제 위치 확인
     local target_dir
@@ -93,8 +86,13 @@ spring_init() {
 
     print -r -- "프로젝트 생성 중..."
     
-    local -a curl_cmd=(
-        curl -s "https://start.spring.io/starter.tgz"
+    local tmp_file
+    tmp_file=$(mktemp)
+    
+    local -a curl_args
+    curl_args=(
+        -s -w "%{http_code}" -o "$tmp_file"
+        "https://start.spring.io/starter.tgz"
         -d "type=$type"
         -d "language=$language"
         -d "bootVersion=$bootVersion"
@@ -108,13 +106,30 @@ spring_init() {
         -d "dependencies=$dependencies"
     )
 
+    [[ -n "$target_dir" ]] && curl_args+=(-d "baseDir=$target_dir")
+
+    local http_code
+    http_code=$(curl "${curl_args[@]}")
+
+    if [[ "$http_code" -ne 200 ]]; then
+        print -r -- "Error: 프로젝트 생성에 실패했습니다. (HTTP Code: $http_code)"
+        if [[ -f "$tmp_file" ]]; then
+            cat "$tmp_file"
+            print -r -- ""
+            rm -f "$tmp_file"
+        fi
+        return 1
+    fi
+
     if [[ -z "$target_dir" ]]; then
         # 입력이 없으면 현재 폴더에 직접 해제 (최상위 디렉토리 스트립)
-        "${curl_cmd[@]}" | tar -xzvf - --strip-components=1
+        tar -xzvf "$tmp_file" --strip-components=1
     else
         # 입력이 있으면 해당 이름의 폴더를 생성하여 해제
-        "${curl_cmd[@]}" -d "baseDir=$target_dir" | tar -xzvf -
+        tar -xzvf "$tmp_file"
     fi
+
+    rm -f "$tmp_file"
 
     print -r -- ""
     print -r -- "성공: 프로젝트 생성이 완료되었습니다."
