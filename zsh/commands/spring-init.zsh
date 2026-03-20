@@ -37,7 +37,7 @@ spring_init() {
 
     # 4. 프로젝트 유형, 언어, 부트 버전 선택
     local type language bootVersion
-    type=$(select_option '.type.values[] | "\(.id)\t\(.name)"' "프로젝트 유형 선택: ") || return 0
+    type=$(select_option '.type.values[] | select(.tags.format == "project") | "\(.id)\t\(.name)"' "프로젝트 유형 선택: ") || return 0
     language=$(select_option '.language.values[] | "\(.id)\t\(.name)"' "언어 선택: ") || return 0
     bootVersion=$(select_option '.bootVersion.values[] | "\(.id)\t\(.name)"' "스프링 부트 버전 선택: ") || return 0
 
