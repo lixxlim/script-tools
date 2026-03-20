@@ -48,11 +48,13 @@ spring_init() {
     read -r artifactId
     artifactId=${artifactId:-demo}
 
-    # Project Name은 Artifact ID와 동일하게 설정 (입력 생략)
-    name="$artifactId"
+    printf "Project Name [$artifactId]: "
+    read -r name
+    name=${name:-$artifactId}
 
-    # Description은 공백으로 설정 (입력 생략)
-    description=""
+    printf "Description [Demo project for Spring Boot]: "
+    read -r description
+    description=${description:-Demo project for Spring Boot}
 
     printf "Package Name [$groupId.$artifactId]: "
     read -r packageName
@@ -63,7 +65,12 @@ spring_init() {
     javaVersion=$(select_option '.javaVersion.values[] | "\(.id)\t\(.name)"' "자바 버전 선택: ") || return 0
     packaging=$(select_option '.packaging.values[] | "\(.id)\t\(.name)"' "패키징 방식 선택: ") || return 0
 
-    # 7. 의존성 선택 (멀티 선택, 프리뷰창에 설명 표시)
+    # 7. 설정 파일 형식 선택 (Properties / YAML)
+    local configFormat
+    configFormat=$(printf "properties\tProperties\nyaml\tYAML" | fzf --prompt="설정 파일 형식 선택: " --height=20% --reverse --border --delimiter='\t' --with-nth=2 | awk -F'\t' '{print $1}')
+    configFormat=${configFormat:-properties}
+
+    # 8. 의존성 선택 (멀티 선택, 프리뷰창에 설명 표시)
     local dependencies
     dependencies=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.id)\t\(.name) ( \(.id) )\t\(.description)"' | \
         fzf -m \
@@ -76,7 +83,7 @@ spring_init() {
             --height=60% --reverse --border | \
         awk -F'\t' '{print $1}' | paste -sd "," -)
 
-    # 8. 다운로드 및 압축 해제 위치 확인
+    # 9. 다운로드 및 압축 해제 위치 확인
     local target_dir
     printf "압축을 풀 디렉토리 명 (엔터 시 현재 폴더에 직접 해제): "
     read -r target_dir
@@ -119,6 +126,24 @@ spring_init() {
 
     # 압축 해제
     tar -xzvf "$tmp_file"
+
+    # YAML 선택 시 파일명 변경
+    if [[ "$configFormat" == "yaml" ]]; then
+        local base_path
+        if [[ -n "$target_dir" ]]; then
+            base_path="$target_dir"
+        else
+            base_path="."
+        fi
+        
+        local prop_file="$base_path/src/main/resources/application.properties"
+        local yaml_file="$base_path/src/main/resources/application.yml"
+        
+        if [[ -f "$prop_file" ]]; then
+            mv "$prop_file" "$yaml_file"
+            echo "설정 파일을 application.yml로 변경했습니다."
+        fi
+    fi
 
     rm -f "$tmp_file"
 
