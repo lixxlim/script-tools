@@ -1,4 +1,4 @@
-# Git log graph with interactive branch selection
+# Git log graph with interactive branch selection (Local by default, Ctrl-a for all)
 git_graph() {
     if ! command -v git >/dev/null 2>&1; then
         echo "git is not installed."
@@ -10,8 +10,11 @@ git_graph() {
     fi
 
     local branch
-    branch=$(git branch --all --format='%(refname:short)' | sort -u | \
-        fzf --preview 'git log --graph --oneline --decorate --color=always {} | head -100') || return
+    branch=$(git branch --format='%(refname:short)' | \
+        fzf --header "ctrl-a: all branches, ctrl-l: local branches" \
+            --bind "ctrl-a:reload(git branch --all --format='%(refname:short)' | sort -u)" \
+            --bind "ctrl-l:reload(git branch --format='%(refname:short)')" \
+            --preview 'git log --graph --oneline --decorate --color=always {} | head -100') || return
 
     git log --graph --oneline --decorate "$branch"
 }

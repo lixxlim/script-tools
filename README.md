@@ -56,7 +56,7 @@ fi
 - `edit-nginx`: `sudo vi /etc/nginx`로 Nginx 설정을 편집한 뒤, 종료 시 `sudo nginx -t`로 설정 문법을 점검합니다. (`nginx`, `sudo` 권한 필요)
 - `sdk-use-java`: 설치된 Java 버전을 선택하고 SDKMAN!을 통해 즉시 적용합니다. (`fzf`, `sdkman` 필요)
 - `nvm-use-node`: 설치된 Node.js 버전을 선택하고 `nvm use`로 즉시 전환합니다. (`fzf`, `nvm` 필요)
-- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
+- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (기본 로컬 브랜치 표시, `Ctrl-a`로 전체 브랜치 전환 가능) (`git`, `fzf` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
@@ -74,7 +74,7 @@ fi
 - `sdk-use-java`: 설치된 Java 후보를 선택해 SDKMAN 기본 버전으로 전환합니다. (`sdkman`, `gum` 또는 `fzf` 필요)
 - `nvm-use-node`: 설치된 Node.js 버전을 `fzf`로 선택해 `nvm use`로 전환합니다. (`nvm`, `fzf` 필요)
 - `git-check`: 현재 저장소의 브랜치를 `fzf`로 선택해 `git switch`를 실행합니다. (`fzf` 필요)
-- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (`git`, `fzf` 필요)
+- `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (기본 로컬 브랜치 표시, `Ctrl-a`로 전체 브랜치 전환 가능) (`git`, `fzf` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. (`fzf` 필요)
 - `idea`: macOS에서 현재 디렉토리를 IntelliJ IDEA로 엽니다.
