@@ -176,6 +176,9 @@ run_claude_code_with_openrouter() {
     fi
   done
 
+  # 통합 무료 모델 라우터 추가 (항상 맨 아래 표시)
+  visible_models+=("openrouter/free | 통합 무료 모델 라우터 (자동 선택)")
+
   if (( ${#visible_models[@]} == 0 )); then
     print -u2 "제외 리스트 적용 후 선택 가능한 모델이 없습니다."
     return 1
