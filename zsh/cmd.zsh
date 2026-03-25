@@ -15,6 +15,7 @@ CMD_ORDER=(
     "nvm-use-node"
     "git-check"
     "git-graph"
+    "gh-workflow-run"
     "is-merged"
     "activate"
     "idea"

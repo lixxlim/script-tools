@@ -13,6 +13,7 @@ CMD_ORDER=(
 	"sdk-use-java"
 	"nvm-use-node"
 	"git-graph"
+	"gh-workflow-run"
 	"is-merged"
 	"activate"
 	"codex"
