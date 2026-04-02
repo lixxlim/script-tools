@@ -1,0 +1,32 @@
+#!/bin/bash
+
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+
+URL="https://www.oreilly.co.jp/ebook/"
+SAVE_DIR="/tmp"
+HASH_FILE="$SAVE_DIR/page_hash.txt"
+
+CURRENT_HASH=$(curl -sL "$URL" | md5sum | awk '{print $1}')
+
+if [ ! -f "$HASH_FILE" ]; then
+	echo "[$(date)] 초회저장"
+	echo "$CURRENT_HASH" > "$HASH_FILE"
+	exit 0
+fi
+
+OLD_HASH=$(cat "$HASH_FILE")
+
+if [ "$CURRENT_HASH" != "$OLD_HASH" ]; then
+	echo "[$(date)] 변경감지됨"
+	
+	/usr/bin/gh workflow run 239747512 --repo lixxlim/OReilly-Japan-Ebook-Gallery
+	if [ $? -eq 0 ]; then
+		echo "$CURRENT_HASH" > "$HASH_FILE"
+		echo "[$(date)] 페이지갱신완료"
+	else
+		echo "[$(date)] 페이지갱신실패"
+	fi
+	
+else
+	echo "[$(date)] 변경없음"
+fi

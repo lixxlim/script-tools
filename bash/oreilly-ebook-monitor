@@ -1,0 +1,254 @@
+#!/bin/bash
+
+# O'Reilly Japan Ebook Store Monitor Script
+# Monitors New Release section and sends Slack notifications on changes
+
+# Configuration
+URL="https://www.oreilly.co.jp/ebook/"
+STATE_FILE="$HOME/.oreilly_ebook_last_state"
+TMP_FILE="/tmp/oreilly_ebook_current"
+LOG_FILE="$HOME/.oreilly_ebook_monitor.log"
+
+SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
+SLACK_CHANNEL="${SLACK_CHANNEL:-#general}"
+SLACK_USERNAME="O'Reilly Ebook Monitor"
+SLACK_ICON=":books:"
+
+log() {
+    local level=$1
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
+    echo "[$level] $message"
+}
+
+check_dependencies() {
+    if ! command -v curl >/dev/null 2>&1; then
+        log ERROR "curl is required but not installed"
+        exit 1
+    fi
+}
+
+fetch_page() {
+    log INFO "Fetching ${URL}"
+    local html=$(curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" "$URL")
+    
+    if [ $? -ne 0 ] || [ -z "$html" ]; then
+        log ERROR "Failed to fetch ${URL}"
+        return 1
+    fi
+    
+    echo "$html"
+}
+
+parse_new_releases() {
+    local html=$1
+    
+    # Extract New Release section between "new_titles" and "All Titles"
+    local new_release_section=$(echo "$html" | sed -n '/name="new_titles"/,/## All Titles/p')
+    
+    # Extract ISBNs from the section (pattern: ISBN978-x-xxxx-xxxx-x)
+    echo "$new_release_section" | grep -oE 'ISBN978-[0-9-]{10,}' | sed 's/^ISBN//' | sort -u
+}
+
+get_book_info() {
+    local isbn=$1
+    local html=$2
+    
+    # Extract title - find element with name or id equal to ISBN (without dashes)
+    local isbn_digits=$(echo "$isbn" | tr -d '-')
+    local title=$(echo "$html" | grep -oE "name=\"${isbn_digits}\"[^>]*>[^<]+" | sed 's/.*>//' | head -n1)
+    
+    if [ -z "$title" ]; then
+        title=$(echo "$html" | grep -oE "id=\"${isbn_digits}\"[^>]*>[^<]+" | sed 's/.*>//' | head -n1)
+    fi
+    
+    # Get price - find the price after the ISBN in New Release section (using full ISBN with dashes)
+    local price=$(echo "$html" | grep -A1 "ISBN${isbn}" | grep -oE 'Ebook価格[0-9,]+' | grep -oE '[0-9,]+' | tr -d ',' | head -n1)
+    
+    # Get release date from All Titles section
+    local date=$(echo "$html" | grep -oE "${isbn}[[:space:]]*<td>[^<]*<td>[^<]*<td>[0-9]+年[0-9]+月[0-9]+日" | grep -oE '[0-9]+年[0-9]+月[0-9]+日' | head -n1)
+    
+    if [ -z "$date" ]; then
+        date=$(echo "$html" | grep -oE "${isbn}[^<]*[0-9]+年[0-9]+月[0-9]+日" | grep -oE '[0-9]+年[0-9]+月[0-9]+日' | head -n1)
+    fi
+    
+    # Convert Japanese date format to YYYY-MM-DD
+    date=$(echo "$date" | sed 's/年/-/g' | sed 's/月/-/g' | sed 's/日//g')
+    
+    echo "${title}|${price}|${date}"
+}
+
+send_slack() {
+    local message="$1"
+    
+    if [ -z "$SLACK_WEBHOOK_URL" ]; then
+        log ERROR "SLACK_WEBHOOK_URL environment variable not set"
+        return 1
+    fi
+    
+    local response=$(curl -s -X POST -H 'Content-type: application/json' \
+        -d "$message" "$SLACK_WEBHOOK_URL")
+    
+    if [ $? -eq 0 ]; then
+        log SUCCESS "Slack notification sent"
+        return 0
+    else
+        log ERROR "Failed to send Slack notification: $response"
+        return 1
+    fi
+}
+
+build_slack_message() {
+    local isbn=$1
+    local title=$2
+    local price=$3
+    local date=$4
+    
+    # Clean up title
+    title=$(echo "$title" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    # Fallback for title if empty
+    if [ -z "$title" ] || [ "$title" = "$isbn" ]; then
+        title="New Release"
+    fi
+    
+    cat << EOF
+{
+    "channel": "$SLACK_CHANNEL",
+    "username": "$SLACK_USERNAME",
+    "icon_emoji": "$SLACK_ICON",
+    "attachments": [
+        {
+            "color": "#36a64f",
+            "title": "$title",
+            "title_link": "https://www.oreilly.co.jp/books/${isbn}",
+            "fields": [
+                {
+                    "title": "ISBN",
+                    "value": "$isbn",
+                    "short": true
+                },
+                {
+                    "title": "Price",
+                    "value": "¥${price:-N/A}",
+                    "short": true
+                },
+                {
+                    "title": "Release Date",
+                    "value": "${date:-N/A}",
+                    "short": true
+                }
+            ],
+            "footer": "O'Reilly Japan Ebook Store",
+            "ts": $(date +%s)
+        }
+    ]
+}
+EOF
+}
+
+monitor() {
+    check_dependencies
+    
+    if [ -z "$SLACK_WEBHOOK_URL" ]; then
+        log ERROR "SLACK_WEBHOOK_URL is not set"
+        echo "Please set SLACK_WEBHOOK_URL environment variable"
+        echo "Usage: SLACK_WEBHOOK_URL='https://...' $0"
+        exit 1
+    fi
+    
+    log INFO "Starting O'Reilly Ebook monitor"
+    
+    local html
+    html=$(fetch_page) || exit 1
+    
+    # Get ISBNs from New Release section
+    local current_isbns
+    current_isbns=$(parse_new_releases "$html")
+    
+    if [ -z "$current_isbns" ]; then
+        log ERROR "Failed to parse new releases - no ISBNs found"
+        log ERROR "Page structure may have changed"
+        exit 1
+    fi
+    
+    local current_count=$(echo "$current_isbns" | wc -l)
+    log INFO "Found $current_count books in New Release section"
+    
+    # Compare with previous state
+    if [ ! -f "$STATE_FILE" ]; then
+        log INFO "First run - creating state file with $current_count books"
+        echo "$current_isbns" > "$STATE_FILE"
+        exit 0
+    fi
+    
+    local previous_isbns
+    previous_isbns=$(cat "$STATE_FILE")
+    
+    # Find new books
+    local changes=false
+    while IFS= read -r isbn; do
+        if [ -z "$isbn" ]; then
+            continue
+        fi
+        
+        if ! echo "$previous_isbns" | grep -q "^${isbn}$"; then
+            changes=true
+            log INFO "New book detected: $isbn"
+            
+            local book_info
+            book_info=$(get_book_info "$isbn" "$html")
+            
+            local title=$(echo "$book_info" | cut -d'|' -f1)
+            local price=$(echo "$book_info" | cut -d'|' -f2)
+            local date=$(echo "$book_info" | cut -d'|' -f3)
+            
+            log INFO "  Title: $title, Price: ¥$price, Date: $date"
+            
+            local slack_msg
+            slack_msg=$(build_slack_message "$isbn" "$title" "$price" "$date")
+            send_slack "$slack_msg"
+        fi
+    done <<< "$current_isbns"
+    
+    if [ "$changes" = true ]; then
+        echo "$current_isbns" > "$STATE_FILE"
+        log SUCCESS "Updated state file"
+    else
+        log INFO "No changes detected"
+    fi
+    
+    log INFO "Monitor completed"
+}
+
+show_help() {
+    cat << EOF
+O'Reilly Japan Ebook Monitor
+
+Usage:
+    SLACK_WEBHOOK_URL='https://hooks.slack.com/...' $0
+
+Options:
+    -h, --help           Show this help
+
+Environment Variables:
+    SLACK_WEBHOOK_URL    Slack Incoming Webhook URL (required)
+    SLACK_CHANNEL        Slack channel (default: #general)
+    SLACK_USERNAME       Bot name (default: O'Reilly Ebook Monitor)
+
+Cron Example:
+    */30 * * * * SLACK_WEBHOOK_URL='https://...' /path/to/oreilly-ebook-monitor.sh
+
+EOF
+}
+
+case "${1:-}" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+esac
+
+monitor
