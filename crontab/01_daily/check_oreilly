@@ -6,7 +6,56 @@ URL="https://www.oreilly.co.jp/ebook/"
 SAVE_DIR="/tmp"
 HASH_FILE="$SAVE_DIR/page_hash.txt"
 
-CURRENT_HASH=$(curl -sL "$URL" | md5sum | awk '{print $1}')
+json_escape() {
+	printf '%s' "$1" | sed \
+		-e 's/\\/\\\\/g' \
+		-e 's/"/\\"/g' \
+		-e 's/\t/\\t/g' \
+		-e 's/\r//g'
+}
+
+send_slack_alert() {
+	local message payload
+
+	[ -n "${SLACK_WEBHOOK_URL:-}" ] || return 0
+
+	message="$1"
+	payload=$(json_escape "$message")
+
+	curl -fsS \
+		-X POST \
+		-H 'Content-Type: application/json' \
+		--data "{\"text\":\"$payload\"}" \
+		"$SLACK_WEBHOOK_URL" >/dev/null 2>&1 || true
+}
+
+PAGE_HTML=$(curl -fsSL "$URL") || {
+	send_slack_alert "OReilly ebook check failed: download error ($URL)"
+	exit 1
+}
+
+if ! printf '%s\n' "$PAGE_HTML" | grep -q '<table'; then
+	send_slack_alert "OReilly ebook check failed: start marker not found ($URL)"
+	exit 1
+fi
+
+if ! printf '%s\n' "$PAGE_HTML" | grep -q '</table>'; then
+	send_slack_alert "OReilly ebook check failed: end marker not found ($URL)"
+	exit 1
+fi
+
+BOOK_LIST_HTML=$(printf '%s\n' "$PAGE_HTML" | sed -n '/<table/,/<\/table>/p')
+
+if [ -z "$(printf '%s' "$BOOK_LIST_HTML" | tr -d '[:space:]')" ]; then
+	send_slack_alert "OReilly ebook check failed: extracted book list is empty ($URL)"
+	exit 1
+fi
+
+CANONICAL_HTML=$(printf '%s' "$BOOK_LIST_HTML" \
+	| tr -d '\r' \
+	| sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')
+
+CURRENT_HASH=$(printf '%s' "$CANONICAL_HTML" | sha256sum | awk '{print $1}')
 
 if [ ! -f "$HASH_FILE" ]; then
 	echo "[$(date)] 초회저장"
