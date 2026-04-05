@@ -5,28 +5,50 @@ activate() {
         return 1
     fi
 
-    local activate_files
-    activate_files="$(
+    local VENV_LIST_FILE="${TMPDIR:-/tmp}/venv-list"
+    local RESCAN_LABEL="현재 폴더 기준으로 스크립트 다시 검색하기"
+
+    scan_venv() {
         find "$PWD" -type f \
             \( -path "*/.venv/bin/activate" -o -path "*/venv/bin/activate" -o -path "*/env/bin/activate" \) \
-            2>/dev/null
-    )"
+            2>/dev/null > "$VENV_LIST_FILE"
+    }
 
-    if [[ -z "$activate_files" ]]; then
-        echo "❌ activate 파일을 찾을 수 없습니다. (.venv/venv/env 경로만 검색)"
-        return 1
-    fi
+    while true; do
+        if [[ ! -f "$VENV_LIST_FILE" || ! -s "$VENV_LIST_FILE" ]]; then
+            scan_venv
+        fi
 
-    local selected
-    selected="$(
-        printf "%s\n" "$activate_files" | fzf \
-            --prompt='activate > ' \
-            --height=40% \
-            --layout=reverse \
-            --border
-    )" || return 0
+        local options
+        options=$(cat "$VENV_LIST_FILE" 2>/dev/null)
+        
+        local selected
+        selected="$(
+            { [[ -n "$options" ]] && echo "$options"; echo "$RESCAN_LABEL"; } | fzf \
+                --prompt='activate > ' \
+                --height=40% \
+                --layout=reverse \
+                --border \
+                --cycle
+        )" || return 0
 
-    if [[ -n "$selected" ]]; then
+        if [[ -z "$selected" ]]; then
+            echo "취소되었습니다."
+            return 0
+        fi
+
+        if [[ "$selected" == "$RESCAN_LABEL" ]]; then
+            scan_venv
+            continue
+        fi
+
+        if [[ ! -f "$selected" ]]; then
+            echo "❌ 해당 파일이 존재하지 않습니다(삭제되었을 수 있습니다): $selected"
+            echo "다른 항목을 선택하거나 재검색을 진행해 주세요."
+            sleep 1
+            continue
+        fi
+
         if [[ -L "$selected" ]]; then
             echo "❌ 심볼릭 링크 activate는 보안상 허용하지 않습니다: $selected"
             return 1
@@ -52,8 +74,10 @@ activate() {
         fi
 
         source "$selected"
-    fi
+        break
+    done
 }
 
 activate "$@"
 unfunction activate 2>/dev/null
+unfunction scan_venv 2>/dev/null
