@@ -49,7 +49,7 @@ runner_claude_code_with_openrouter() {
       claude_cmd+=("${claude_options[@]}")
     fi
 
-    ANTHROPIC_BASE_URL="https://openrouter.ai/api/v1" \
+    ANTHROPIC_BASE_URL="https://openrouter.ai/api" \
     ANTHROPIC_AUTH_TOKEN="${OPENROUTER_API_KEY}" \
     ANTHROPIC_API_KEY="" \
     "${claude_cmd[@]}"
@@ -176,8 +176,7 @@ run_claude_code_with_openrouter() {
     fi
   done
 
-  # 통합 무료 모델 라우터 추가 (항상 맨 아래 표시)
-  visible_models+=("openrouter/free | 통합 무료 모델 라우터 (자동 선택)")
+  # 모델 직접 입력 추가 (항상 맨 아래 표시)
   visible_models+=("manual | 모델 직접 입력")
 
   if (( ${#visible_models[@]} == 0 )); then
@@ -203,11 +202,11 @@ run_claude_code_with_openrouter() {
   model="${selected%% | *}"
 
   if [[ "$model" == "manual" ]]; then
-    print -u2 -n "모델명을 직접 입력하세요 (예: anthropic/claude-3-5-sonnet): "
+    print -u2 -n "모델명을 직접 입력하세요 (기본값: openrouter/free): "
     read -r model
     if [[ -z "$model" ]]; then
-      print -u2 "모델명이 입력되지 않아 취소되었습니다."
-      return 130
+      model="openrouter/free"
+      print -u2 "입력이 없어 기본값($model)으로 진행합니다."
     fi
   fi
 
