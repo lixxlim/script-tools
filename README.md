@@ -59,7 +59,7 @@ fi
 - `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (기본 로컬 브랜치 표시, `Ctrl-a`로 전체 브랜치 전환 가능) (`git`, `fzf` 필요)
 - `gh-workflow-run`: GitHub Actions 워크플로우를 선택하여 실행합니다. (`gh`, `fzf`, `jq` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
-- `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. (`fzf` 필요)
+- `activate`: 현재 디렉토리 또는 하위 디렉토리의 Python 가상 환경(`activate`)을 찾아 선택 후 활성화합니다. 심볼릭 링크/소유자/스크립트 형태를 확인하고 최종 확인 프롬프트를 보여줍니다. `--edit` 옵션으로 저장된 리스트를 직접 편집할 수 있습니다. (`fzf` 필요)
 - `codex`: 한 줄 프롬프트를 입력받아 `codex exec -- "<prompt>"`로 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini -p "<prompt>"` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `spring-init`: Spring Initializr API를 사용하여 Spring Boot 프로젝트를 대화형으로 생성하고 현재 위치에 압축을 풉니다. (`curl`, `fzf`, `jq`, `tar` 필요)
@@ -78,7 +78,7 @@ fi
 - `git-graph`: `fzf`를 통해 브랜치를 선택하고 해당 브랜치의 커밋 로그를 그래프 형태로 출력합니다. (기본 로컬 브랜치 표시, `Ctrl-a`로 전체 브랜치 전환 가능) (`git`, `fzf` 필요)
 - `gh-workflow-run`: GitHub Actions 워크플로우를 선택하여 실행합니다. (`gh`, `fzf`, `jq` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
-- `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. (`fzf` 필요)
+- `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. `--edit` 옵션으로 저장된 리스트를 직접 편집할 수 있습니다. (`fzf` 필요)
 - `idea`: macOS에서 현재 디렉토리를 IntelliJ IDEA로 엽니다.
 - `codex`: 한 줄 프롬프트를 받아 `codex exec -- "<prompt>"`를 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
