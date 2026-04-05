@@ -190,6 +190,7 @@ run_claude_code_with_openrouter() {
       --with-nth=1,2 \
       --prompt="OpenRouter free model > " \
       --layout=reverse \
+      --cycle \
       --border \
       --header="ENTER 선택 / ESC 취소"
   )" || return 130
