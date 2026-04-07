@@ -121,7 +121,7 @@ spring_init() {
         if [[ -f "$tmp_file" ]]; then
             cat "$tmp_file"
             print -r -- ""
-            rm -f "$tmp_file"
+            command rm -f "$tmp_file"
         fi
         return 1
     fi
@@ -142,12 +142,12 @@ spring_init() {
         local yaml_file="$base_path/src/main/resources/application.yml"
         
         if [[ -f "$prop_file" ]]; then
-            mv "$prop_file" "$yaml_file"
+            command mv "$prop_file" "$yaml_file"
             print -r -- "설정 파일을 application.yml로 변경했습니다."
         fi
     fi
 
-    rm -f "$tmp_file"
+    command rm -f "$tmp_file"
 
     print -r -- ""
     print -r -- "성공: 프로젝트 생성이 완료되었습니다."

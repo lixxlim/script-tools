@@ -29,7 +29,7 @@ _activate_bash_func() {
         if [ -n "$found" ]; then
             # 기존 목록 유지 + 새 항목 추가 (발견 순서대로 중복 제거)
             local tmp_file="${VENV_LIST_FILE}.tmp"
-            { [ -f "$VENV_LIST_FILE" ] && cat "$VENV_LIST_FILE"; echo "$found"; } | grep -v '^$' | awk '!x[$0]++' > "$tmp_file" && mv "$tmp_file" "$VENV_LIST_FILE"
+            { [ -f "$VENV_LIST_FILE" ] && cat "$VENV_LIST_FILE"; echo "$found"; } | grep -v '^$' | awk '!x[$0]++' > "$tmp_file" && command mv "$tmp_file" "$VENV_LIST_FILE"
         fi
     }
 
