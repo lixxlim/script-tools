@@ -71,18 +71,41 @@ spring_init() {
     configFormat=$(printf "properties\tProperties\nyaml\tYAML" | fzf --prompt="설정 파일 형식 선택: " --height=20% --reverse --border --delimiter='\t' --with-nth=2 | awk -F'\t' '{print $1}')
     configFormat=${configFormat:-properties}
 
-    # 8. 의존성 선택 (멀티 선택, 프리뷰창에 설명 표시)
-    local dependencies
-    dependencies=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.id)\t\(.name) ( \(.id) )\t\(.description)"' | \
-        fzf -m \
-            --bind 'space:toggle' \
+    # 8. 의존성 선택 (멀티 선택, 선택된 항목을 위로 올림)
+    local dep_list_raw sel_file dep_list_file reload_cmd
+    dep_list_raw=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.id)\t\(.name) ( \(.id) )\t\(.description)"')
+    sel_file=$(mktemp)
+    dep_list_file=$(mktemp)
+    echo "$dep_list_raw" > "$dep_list_file"
+    
+    # fzf 리로드 커맨드: 1:우선순위, 2:마커, 3:ID, 4:이름, 5:설명 (탭 구분)
+    reload_cmd="awk -F'\\t' -v sel_f=\"$sel_file\" 'BEGIN { while((getline < sel_f) > 0) s[\$0]=1 } { if (s[\$1]) print \"1\\t[x]\\t\" \$0; else print \"2\\t[ ]\\t\" \$0 }' \"$dep_list_file\" | sort -k1,1n -k4"
+
+    local selected_output
+    selected_output=$(awk -F'\t' '{print "2\t[ ]\t" $0}' "$dep_list_file" | sort -k1,1n -k4 | \
+        fzf --prompt="의존성 선택 (Space로 다중 선택, Enter로 확정): " \
+            --height=60% --reverse --border \
             --delimiter='\t' \
-            --with-nth=2 \
-            --preview 'echo {3}' \
+            --with-nth=2,4 \
+            --preview 'echo {5}' \
             --preview-window=down:3:wrap \
-            --prompt="의존성 선택 (Space로 다중 선택, Enter로 확정): " \
-            --height=60% --reverse --border | \
-        awk -F'\t' '{print $1}' | paste -sd "," -)
+            --bind "space:execute(
+                id='{3}';
+                if grep -xFq \"\$id\" \"$sel_file\" 2>/dev/null; then
+                    grep -xFv \"\$id\" \"$sel_file\" > \"$sel_file.tmp\"; mv \"$sel_file.tmp\" \"$sel_file\";
+                else
+                    echo \"\$id\" >> \"$sel_file\";
+                fi
+            )+reload($reload_cmd)" | \
+        awk -F'\t' '{print $3}')
+
+    local dependencies
+    if [[ -s "$sel_file" ]]; then
+        dependencies=$(paste -sd "," "$sel_file")
+    else
+        dependencies="$selected_output"
+    fi
+    rm -f "$sel_file" "$sel_file.tmp" "$dep_list_file"
 
     # 9. 다운로드 및 압축 해제 위치 확인
     local target_dir
@@ -129,21 +152,38 @@ spring_init() {
     # 압축 해제
     tar -xzvf "$tmp_file"
 
-    # YAML 선택 시 파일명 변경
+    # YAML 선택 시 파일명 변경 및 형식 변환
     if [[ "$configFormat" == "yaml" ]]; then
-        local base_path
-        if [[ -n "$target_dir" ]]; then
-            base_path="$target_dir"
-        else
-            base_path="."
-        fi
-        
+        local base_path="${target_dir:-.}"
         local prop_file="$base_path/src/main/resources/application.properties"
         local yaml_file="$base_path/src/main/resources/application.yml"
         
         if [[ -f "$prop_file" ]]; then
-            command mv "$prop_file" "$yaml_file"
-            print -r -- "설정 파일을 application.yml로 변경했습니다."
+            # application.properties 내용을 YAML 형식으로 변환
+            awk -F= '
+            {
+                gsub(/ /, "", $1);
+                split($1, keys, ".");
+                val = $2;
+                for (i=1; i<=length(keys); i++) {
+                    curr_path = "";
+                    for (j=1; j<=i; j++) curr_path = curr_path (j>1 ? "." : "") keys[j];
+                    if (curr_path != last_path[i]) {
+                        indent = ""; for (j=1; j<i; j++) indent = indent "  ";
+                        print indent keys[i] ":" (i == length(keys) ? " " val : "");
+                    }
+                    last_path[i] = curr_path;
+                }
+                for (i=length(keys)+1; i<=10; i++) last_path[i] = "";
+            }' "$prop_file" > "$yaml_file"
+            
+            if [[ -s "$yaml_file" ]]; then
+                command rm -f "$prop_file"
+                print -r -- "설정 파일을 application.yml로 변경하고 형식을 변환했습니다."
+            else
+                command mv "$prop_file" "$yaml_file"
+                print -r -- "설정 파일을 application.yml로 변경했습니다."
+            fi
         fi
     fi
 
