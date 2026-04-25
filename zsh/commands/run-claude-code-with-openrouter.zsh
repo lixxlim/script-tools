@@ -3,17 +3,17 @@
 
 # 제외 리스트 (글로벌 상수)
 typeset -ga OPENROUTER_EXCLUDE_PATTERNS=(
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
-  "google/gemma*"
-  "deepseek/deepseek-r1-0528:free"
-  "liquid/lfm*"
-  "nousresearch/hermes-3-llama-3.1-405b:free"
-  "nvidia/nemotron*"
-  "stepfun/step-3.5-flash:free"
-  "meta-llama/llama-3.2-3b-instruct:free"
-  "qwen/qwen3-4b:free"
-  "openai/gpt-oss-*"
-  "meta-llama/llama-3.3-70b-*"
+  #"cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+  #"google/gemma*"
+  #"deepseek/deepseek-r1-0528:free"
+  #"liquid/lfm*"
+  #"nousresearch/hermes-3-llama-3.1-405b:free"
+  #"nvidia/nemotron*"
+  #"stepfun/step-3.5-flash:free"
+  #"meta-llama/llama-3.2-3b-instruct:free"
+  #"qwen/qwen3-4b:free"
+  #"openai/gpt-oss-*"
+  #"meta-llama/llama-3.3-70b-*"
 )
 
 # 모델 메모 (글로벌 상수)
