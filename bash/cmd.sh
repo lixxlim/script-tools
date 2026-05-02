@@ -17,6 +17,7 @@ CMD_ORDER=(
 	"gh-workflow-run"
 	"is-merged"
 	"activate"
+	"setup-agents"
 	"codex"
 	"gemini"
 	"spring-init"

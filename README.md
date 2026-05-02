@@ -81,6 +81,7 @@ fi
 - `gh-workflow-run`: GitHub Actions 워크플로우를 선택하여 실행합니다. (`gh`, `fzf`, `jq` 필요)
 - `is-merged`: 현재 브랜치가 대상 브랜치에 머지되었는지 확인합니다. (`fzf` 필요)
 - `activate`: 현재 디렉토리/하위 디렉토리에서 Python venv `activate` 파일을 찾아 선택 후 활성화합니다. 소유권/심볼릭 링크/스크립트 형태 검증과 확인 프롬프트를 포함합니다. `--edit` 옵션으로 저장된 리스트를 직접 편집할 수 있습니다. (`fzf` 필요)
+- `setup-agents`: 에이전트 설정 디렉토리(~/.agents 등)를 생성하고 `AGENTS.md` 심볼릭 링크를 구성합니다. (~/.claude/CLAUDE.md, ~/.codex/AGENTS.md, ~/.gemini/GEMINI.md)
 - `idea`: macOS에서 현재 디렉토리를 IntelliJ IDEA로 엽니다.
 - `codex`: 한 줄 프롬프트를 받아 `codex exec -- "<prompt>"`를 실행합니다. (`codex` 필요, `gum` 있으면 입력 UI 개선)
 - `gemini`: 한 줄 프롬프트를 받아 `gemini -p "<prompt>"`를 실행합니다. (`gemini` 필요, `gum` 있으면 입력/스피너 UI 제공)
