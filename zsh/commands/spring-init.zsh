@@ -68,7 +68,7 @@ spring_init() {
 
     # 7. 설정 파일 형식 선택 (Properties / YAML)
     local configFormat
-    configFormat=$(printf "properties\tProperties\nyaml\tYAML" | fzf --prompt="설정 파일 형식 선택: " --height=20% --reverse --border --delimiter='\t' --with-nth=2 | awk -F'\t' '{print $1}')
+    configFormat=$(printf "yaml\tYAML\nproperties\tProperties" | fzf --prompt="설정 파일 형식 선택: " --height=20% --reverse --border --delimiter='\t' --with-nth=2 | awk -F'\t' '{print $1}')
     configFormat=${configFormat:-properties}
 
     # 8. 의존성 선택 (멀티 선택, 선택된 항목을 위로 올림)
@@ -84,7 +84,7 @@ spring_init() {
     local selected_output
     selected_output=$(awk -F'\t' '{print "2\t[ ]\t" $0}' "$dep_list_file" | sort -k1,1n -k4 | \
         fzf --prompt="의존성 선택 (Space로 다중 선택, Enter로 확정): " \
-            --height=60% --reverse --border \
+            --height=100% --reverse --border \
             --delimiter='\t' \
             --with-nth=2,4 \
             --preview 'echo {5}' \
