@@ -65,6 +65,7 @@ fi
 - `gemini`: 한 줄 프롬프트를 입력받아 `gemini -p "<prompt>"`로 실행합니다. (`gemini -p "<prompt>"` 필요, `gum` 있으면 입력/스피너 UI 제공)
 - `spring-init`: Spring Initializr API를 사용하여 Spring Boot 프로젝트를 대화형으로 생성하고 현재 위치에 압축을 풉니다. (`curl`, `fzf`, `jq`, `tar` 필요)
 - `pdf-translator`: PDF 파일을 텍스트로 추출하여 번역합니다. (`python3`, `pymupdf`, `fzf` 필요)
+- `whatis`: 지정한 함수나 명령어의 타입, 정의 및 출처 파일 정보를 출력합니다.
 - `check-encode`: 현재 디렉토리 내 파일들의 인코딩을 확인합니다. (`nkf` 필요)
 - `convert-encode-to-utf8`: 현재 디렉토리 내 파일들을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 
@@ -88,6 +89,7 @@ fi
 - `spring-init`: Spring Initializr API를 사용하여 Spring Boot 프로젝트를 대화형으로 생성하고 현재 위치에 압축을 풉니다. (`curl`, `fzf`, `jq`, `tar` 필요)
 - `pdf-translator`: PDF 텍스트를 추출해 번역하고 결과를 텍스트 파일로 저장합니다. (`python3`, `pymupdf`, `fzf` 필요)
 - `transcribe`: 음원 파일을 `fzf`로 선택해 `mlx_whisper`로 전사하고 타임스탬프 텍스트 파일을 생성합니다. (`python3`, `ffmpeg`, `fzf`, `mlx-whisper` 필요)
+- `whatis`: 지정한 함수나 명령어의 타입, 정의 및 출처 파일 정보를 출력합니다.
 - `check-encode`: 현재 디렉토리 파일 인코딩을 출력합니다. (`nkf` 필요)
 - `convert-encode-to-utf8`: 현재 디렉토리 파일을 UTF-8로 변환하고, 변경된 파일의 전후 인코딩을 출력합니다. (`nkf` 필요)
 
