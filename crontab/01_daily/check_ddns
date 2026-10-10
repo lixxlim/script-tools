@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CONFIG="/etc/cloudflare-ddns.conf"
+LOG_TAG="cloudflare-ipv6-ddns"
+
+# 설정 파일 읽기
+source "$CONFIG"
+
+API="https://api.cloudflare.com/client/v4"
+AUTH_HEADER="Authorization: Bearer ${CF_API_TOKEN}"
+
+log() {
+    logger -t "$LOG_TAG" -- "$*"
+    echo "$(date '+%F %T') $*"
+}
+
+# 외부 IPv6 통신에 사용할 소스 주소 확인
+IPV6=$(
+    ip -6 route get 2606:4700:4700::1111 |
+    awk '{
+        for (i=1; i<=NF; i++) {
+            if ($i == "src") {
+                print $(i+1)
+                exit
+            }
+        }
+    }'
+)
+
+if [[ -z "$IPV6" ]]; then
+    log "ERROR: IPv6 주소를 확인할 수 없습니다."
+    exit 1
+fi
+
+# IPv6 글로벌 유니캐스트 주소인지 확인
+if [[ ! "$IPV6" =~ ^[23][0-9a-fA-F]{0,3}: ]]; then
+    log "ERROR: 글로벌 IPv6 주소가 아닙니다: $IPV6"
+    exit 1
+fi
+
+# Cloudflare에서 해당 AAAA 레코드 조회
+RESPONSE=$(
+    curl --fail --silent --show-error \
+        --connect-timeout 10 --max-time 30 \
+        -H "$AUTH_HEADER" \
+        -H "Content-Type: application/json" \
+        "$API/zones/${CF_ZONE_ID}/dns_records?type=AAAA&name=${CF_RECORD_NAME}"
+)
+
+RECORD_ID=$(jq -er '
+    if .success == true and (.result | length) == 1
+    then .result[0].id
+    else error("DNS 레코드가 없거나 여러 개입니다.")
+    end
+' <<< "$RESPONSE") || {
+    log "ERROR: Cloudflare AAAA 레코드를 확인할 수 없습니다."
+    exit 1
+}
+
+CURRENT_IP=$(jq -r '.result[0].content' <<< "$RESPONSE")
+
+# 변경 사항이 없으면 종료
+if [[ "$IPV6" == "$CURRENT_IP" ]]; then
+    log "변경 없음: $IPV6"
+    exit 0
+fi
+
+log "IPv6 변경 감지: $CURRENT_IP -> $IPV6"
+
+# DNS 레코드 업데이트
+UPDATE_RESPONSE=$(
+    jq -n \
+        --arg name "$CF_RECORD_NAME" \
+        --arg content "$IPV6" \
+        '{
+            type: "AAAA",
+            name: $name,
+            content: $content,
+            ttl: 300,
+            proxied: false
+        }' |
+    curl --fail --silent --show-error \
+        --connect-timeout 10 --max-time 30 \
+        -X PUT \
+        -H "$AUTH_HEADER" \
+        -H "Content-Type: application/json" \
+        --data-binary @- \
+        "$API/zones/${CF_ZONE_ID}/dns_records/${RECORD_ID}"
+) || {
+    log "ERROR: Cloudflare DNS 업데이트 요청이 실패했습니다."
+    exit 1
+}
+
+if [[ "$(jq -r '.success' <<< "$UPDATE_RESPONSE")" != "true" ]]; then
+    log "ERROR: Cloudflare API가 업데이트 실패를 반환했습니다."
+    jq -c '.errors' <<< "$UPDATE_RESPONSE" >&2
+    exit 1
+fi
+
+log "업데이트 완료: $IPV6"
+
