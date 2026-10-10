@@ -71,18 +71,22 @@ spring_init() {
     configFormat=$(printf "yaml\tYAML\nproperties\tProperties" | fzf --prompt="설정 파일 형식 선택: " --height=20% --reverse --border --delimiter='\t' --with-nth=2 | awk -F'\t' '{print $1}')
     configFormat=${configFormat:-properties}
 
-    # 8. 의존성 선택 (멀티 선택, 선택된 항목을 위로 올림)
-    local dep_list_raw sel_file dep_list_file reload_cmd
+    # 8. 의존성 선택 (멀티 선택, 히스토리 및 선택 항목 우선순위 적용)
+    local dep_list_raw sel_file dep_list_file reload_cmd history_file
+    history_file="/tmp/.spring_init_deps_history_$(whoami)"
+    [[ ! -f "$history_file" ]] && touch "$history_file"
+
     dep_list_raw=$(echo "$METADATA" | jq -r '.dependencies.values[].values[] | "\(.id)\t\(.name) ( \(.id) )\t\(.description)"')
     sel_file=$(mktemp)
     dep_list_file=$(mktemp)
     echo "$dep_list_raw" > "$dep_list_file"
     
-    # fzf 리로드 커맨드: 1:우선순위, 2:마커, 3:ID, 4:이름, 5:설명 (탭 구분)
-    reload_cmd="awk -F'\\t' -v sel_f=\"$sel_file\" 'BEGIN { while((getline < sel_f) > 0) s[\$0]=1 } { if (s[\$1]) print \"1\\t[x]\\t\" \$0; else print \"2\\t[ ]\\t\" \$0 }' \"$dep_list_file\" | sort -k1,1n -k4"
+    # fzf 리로드 커맨드: 우선순위(0:선택됨, 1~N:히스토리, 999999:기타), 마커, ID, 이름, 설명
+    reload_cmd="awk -F'\\t' -v sel_f=\"$sel_file\" -v hist_f=\"$history_file\" 'BEGIN { while((getline < sel_f) > 0) sel[\$0]=1; r=1; while((getline < hist_f) > 0) { if (NF && !(\$0 in hist)) hist[\$0]=r++ } } { id=\$1; if (sel[id]) { print \"0\\t[x]\\t\" \$0 } else if (id in hist) { print hist[id] \"\\t[ ]\\t\" \$0 } else { print \"999999\\t[ ]\\t\" \$0 } }' \"$dep_list_file\" | sort -k1,1n -k4"
 
     local selected_output
-    selected_output=$(awk -F'\t' '{print "2\t[ ]\t" $0}' "$dep_list_file" | sort -k1,1n -k4 | \
+    # 초기 리스트 생성 시에도 히스토리 반영
+    selected_output=$(awk -F'\t' -v hist_f="$history_file" 'BEGIN { r=1; while((getline < hist_f) > 0) { if (NF && !($0 in hist)) hist[$0]=r++ } } { id=$1; if (id in hist) { print hist[id] "\t[ ]\t" $0 } else { print "999999\t[ ]\t" $0 } }' "$dep_list_file" | sort -k1,1n -k4 | \
         fzf --prompt="의존성 선택 (Space로 다중 선택, Enter로 확정): " \
             --height=100% --reverse --border \
             --delimiter='\t' \
@@ -105,6 +109,12 @@ spring_init() {
     else
         dependencies="$selected_output"
     fi
+
+    # 히스토리 업데이트 (최신 선택 항목을 위로)
+    if [[ -n "$dependencies" ]]; then
+        echo "$dependencies" | tr ',' '\n' | cat - "$history_file" 2>/dev/null | awk 'NF && !x[$0]++' > "$history_file.tmp" && mv "$history_file.tmp" "$history_file"
+    fi
+
     rm -f "$sel_file" "$sel_file.tmp" "$dep_list_file"
 
     # 9. 다운로드 및 압축 해제 위치 확인
