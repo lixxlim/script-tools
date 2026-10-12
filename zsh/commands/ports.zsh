@@ -1,4 +1,4 @@
-# 현재 리스닝 포트를 표 형태로 출력합니다. (fzf 필터 지원, 색상 구분)
+# 현재 리스닝 포트를 표 형태로 출력합니다. (fzf 필터 지원, 색상 구분, 포트 번호순 정렬)
 ports() {
     # ── prerequisite check ──────────────────────────────────────────────────
     local ss_cmd=""
@@ -57,11 +57,12 @@ ports() {
         fi
     fi
 
-    # ── awk로 파싱 + 색상 + 표 렌더링 (mawk 호환) ───────────────────────────
+    # ── awk로 파싱 + 색상 + 포트순 정렬 + 표 렌더링 (mawk 호환) ───────────────
     echo "$raw_data" | awk -v filter="$selected_filter" -v used_sudo="$used_sudo" '
     BEGIN {
         RESET    = "\033[0m"
         BOLD     = "\033[1m"
+        C_PORT   = "\033[38;5;226m"   # 노란색 (포트 번호)
         C_TCP    = "\033[38;5;39m"    # 파란색 (TCP)
         C_UDP    = "\033[38;5;208m"   # 주황색 (UDP)
         C_LISTEN = "\033[38;5;82m"    # 초록색
@@ -73,7 +74,7 @@ ports() {
         C_PROC   = "\033[38;5;147m"   # 연보라
         C_PID    = "\033[38;5;245m"   # 회색
         row_count = 0
-        col1 = col2 = col3 = col4 = 0
+        col1 = col2 = col3 = col4 = col5 = 0
     }
 
     /^Netid/ || /^Proto/ { next }
@@ -137,21 +138,21 @@ ports() {
 
         # ── 데이터 저장 ───────────────────────────────────────────────────
         row_count++
+        r_port[row_count]   = port
         r_proto[row_count]  = proto
         r_status[row_count] = status
         r_addr[row_count]   = addr
-        r_port[row_count]   = port
         r_pname[row_count]  = proc_name
         r_ppid[row_count]   = proc_pid
 
-        addr_port = addr ":" port
-        proc_col  = proc_name (proc_pid != "" ? " (" proc_pid ")" : "")
+        proc_col = proc_name (proc_pid != "" ? " (" proc_pid ")" : "")
         r_pcol[row_count] = proc_col
 
-        if (length(proto)     > col1) col1 = length(proto)
-        if (length(status)    > col2) col2 = length(status)
-        if (length(addr_port) > col3) col3 = length(addr_port)
-        if (length(proc_col)  > col4) col4 = length(proc_col)
+        if (length(port)     > col1) col1 = length(port)
+        if (length(proto)    > col2) col2 = length(proto)
+        if (length(status)   > col3) col3 = length(status)
+        if (length(addr)     > col4) col4 = length(addr)
+        if (length(proc_col) > col5) col5 = length(proc_col)
     }
 
     END {
@@ -160,41 +161,74 @@ ports() {
             exit
         }
 
+        # ── 포트 번호(숫자) 기준 정렬 (Shell Sort) ───────────────────────
+        for (r = 1; r <= row_count; r++) order[r] = r
+
+        gap = int(row_count / 2)
+        while (gap > 0) {
+            for (i = gap + 1; i <= row_count; i++) {
+                temp = order[i]
+                j = i
+                while (j > gap) {
+                    idx_prev = order[j - gap]
+                    p1 = r_port[temp] + 0
+                    p2 = r_port[idx_prev] + 0
+                    # 포트 번호 오름차순, 같으면 프로토콜 순
+                    if (p2 > p1 || (p2 == p1 && r_proto[idx_prev] > r_proto[temp])) {
+                        order[j] = idx_prev
+                        j -= gap
+                    } else {
+                        break
+                    }
+                }
+                order[j] = temp
+            }
+            gap = int(gap / 2)
+        }
+
         # 헤더 최소 너비 보장
-        H1 = "PROTOCOL"; H2 = "STATUS"; H3 = "ADDRESS:PORT"; H4 = "PROCESS"
+        H1 = "PORT"; H2 = "PROTOCOL"; H3 = "STATUS"; H4 = "ADDRESS"; H5 = "PROCESS"
         if (length(H1) > col1) col1 = length(H1)
         if (length(H2) > col2) col2 = length(H2)
         if (length(H3) > col3) col3 = length(H3)
         if (length(H4) > col4) col4 = length(H4)
-        col1 += 2; col2 += 2; col3 += 2; col4 += 2
+        if (length(H5) > col5) col5 = length(H5)
+        col1 += 2; col2 += 2; col3 += 2; col4 += 2; col5 += 2
 
         # 가로선 문자열 생성
-        l1 = ""; l2 = ""; l3 = ""; l4 = ""
+        l1 = ""; l2 = ""; l3 = ""; l4 = ""; l5 = ""
         for (i = 1; i <= col1; i++) l1 = l1 "─"
         for (i = 1; i <= col2; i++) l2 = l2 "─"
         for (i = 1; i <= col3; i++) l3 = l3 "─"
         for (i = 1; i <= col4; i++) l4 = l4 "─"
+        for (i = 1; i <= col5; i++) l5 = l5 "─"
 
         # ── 상단 테두리 ───────────────────────────────────────────────────
-        print BOLD "┌" l1 "┬" l2 "┬" l3 "┬" l4 "┐" RESET
+        print BOLD "┌" l1 "┬" l2 "┬" l3 "┬" l4 "┬" l5 "┐" RESET
 
         # ── 헤더 ─────────────────────────────────────────────────────────
-        printf BOLD "│ %-*s │ %-*s │ %-*s │ %-*s │" RESET "\n", \
-            col1-2, H1, col2-2, H2, col3-2, H3, col4-2, H4
+        printf BOLD "│ %-*s │ %-*s │ %-*s │ %-*s │ %-*s │" RESET "\n", \
+            col1-2, H1, col2-2, H2, col3-2, H3, col4-2, H4, col5-2, H5
 
-        print BOLD "├" l1 "┼" l2 "┼" l3 "┼" l4 "┤" RESET
+        print BOLD "├" l1 "┼" l2 "┼" l3 "┼" l4 "┼" l5 "┤" RESET
 
-        # ── 데이터 행 ────────────────────────────────────────────────────
-        for (r = 1; r <= row_count; r++) {
+        # ── 데이터 행 (정렬 순서대로 출력, 포트별 그룹 구분) ─────────────
+        prev_port = ""
+        for (m = 1; m <= row_count; m++) {
+            r      = order[m]
+            port   = r_port[r]
             proto  = r_proto[r]
             status = r_status[r]
             addr   = r_addr[r]
-            port   = r_port[r]
             pname  = r_pname[r]
             ppid   = r_ppid[r]
             pcol   = r_pcol[r]
 
-            addr_port = addr ":" port
+            # 포트가 변경되면 그룹 구분선 출력
+            if (m > 1 && port != prev_port) {
+                print "├" l1 "┼" l2 "┼" l3 "┼" l4 "┼" l5 "┤"
+            }
+            prev_port = port
 
             # 프로토콜 색
             if (proto == "tcp")      cp = C_TCP
@@ -223,24 +257,27 @@ ports() {
             proto_disp = toupper(proto)
 
             # 패딩 생성
-            pp = ""; sp = ""; ap = ""; prp = ""
-            n1 = col1-2-length(proto_disp)
-            n2 = col2-2-length(status)
-            n3 = col3-2-length(addr_port)
-            n4 = col4-2-length(pcol)
-            for (i=0; i<n1; i++) pp  = pp  " "
-            for (i=0; i<n2; i++) sp  = sp  " "
-            for (i=0; i<n3; i++) ap  = ap  " "
-            for (i=0; i<n4; i++) prp = prp " "
+            pp1 = ""; pp2 = ""; sp = ""; ap = ""; prp = ""
+            n1 = col1-2-length(port)
+            n2 = col2-2-length(proto_disp)
+            n3 = col3-2-length(status)
+            n4 = col4-2-length(addr)
+            n5 = col5-2-length(pcol)
+            for (i=0; i<n1; i++) pp1 = pp1 " "
+            for (i=0; i<n2; i++) pp2 = pp2 " "
+            for (i=0; i<n3; i++) sp  = sp  " "
+            for (i=0; i<n4; i++) ap  = ap  " "
+            for (i=0; i<n5; i++) prp = prp " "
 
-            print "│ " cp proto_disp RESET pp \
+            print "│ " C_PORT port RESET pp1 \
+                  " │ " cp proto_disp RESET pp2 \
                   " │ " cs status RESET sp \
-                  " │ " ca addr_port RESET ap \
+                  " │ " ca addr RESET ap \
                   " │ " proc_str prp " │"
         }
 
         # ── 하단 테두리 ───────────────────────────────────────────────────
-        print BOLD "└" l1 "┴" l2 "┴" l3 "┴" l4 "┘" RESET
+        print BOLD "└" l1 "┴" l2 "┴" l3 "┴" l4 "┴" l5 "┘" RESET
 
         printf "  총 %d개 항목  [필터: %s]", row_count, filter
         if (!used_sudo)
@@ -250,7 +287,8 @@ ports() {
         # ── 색상 범례 ─────────────────────────────────────────────────────
         print ""
         print BOLD "  색상 범례" RESET
-        print "  " C_TCP      "■" RESET " TCP 프로토콜   " \
+        print "  " C_PORT     "■" RESET " 포트 번호      " \
+              C_TCP           "■" RESET " TCP 프로토콜   " \
               C_UDP           "■" RESET " UDP 프로토콜"
         print "  " C_LISTEN   "■" RESET " LISTEN 상태    " \
               C_UNCONN        "■" RESET " UNCONN 상태    " \
