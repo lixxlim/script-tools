@@ -1,13 +1,17 @@
 # 현재 리스닝 포트를 표 형태로 출력합니다. (fzf 필터 지원, 색상 구분, 포트 번호순 정렬)
 ports() {
     # ── prerequisite check ──────────────────────────────────────────────────
-    local ss_cmd=""
+    local backend=""
     if command -v ss >/dev/null 2>&1; then
-        ss_cmd="ss"
+        backend="ss"
+    elif [[ "$(uname -s)" == "Darwin" ]] && command -v lsof >/dev/null 2>&1; then
+        backend="lsof"
     elif command -v netstat >/dev/null 2>&1; then
-        ss_cmd="netstat"
+        backend="netstat"
+    elif command -v lsof >/dev/null 2>&1; then
+        backend="lsof"
     else
-        echo "❌ ss 또는 netstat이 필요합니다."
+        echo "❌ ss, lsof 또는 netstat이 필요합니다."
         return 1
     fi
 
@@ -38,16 +42,44 @@ ports() {
     # Esc 또는 미선택 시 기본값(전체 표시)
     [[ -z "$selected_filter" ]] && selected_filter="전체 표시 (필터 없음)"
 
-    # ── ss/netstat 실행 (sudo 우선 시도, 실패 시 일반 실행으로 fallback) ──────
+    # ── 데이터 수집 (sudo 우선 시도, 실패 시 일반 실행으로 fallback) ──────
     local raw_data=""
     local used_sudo=0
-    if [[ "$ss_cmd" == "ss" ]]; then
+    if [[ "$backend" == "ss" ]]; then
         if sudo -n ss -tunlp >/dev/null 2>&1; then
             raw_data=$(sudo ss -tunlp 2>/dev/null)
             used_sudo=1
         else
             raw_data=$(ss -tunlp 2>/dev/null)
         fi
+    elif [[ "$backend" == "lsof" ]]; then
+        local lsof_raw=""
+        if sudo -n lsof -nP -iTCP -sTCP:LISTEN -iUDP -F pcnPtT >/dev/null 2>&1; then
+            lsof_raw=$(sudo lsof -nP -iTCP -sTCP:LISTEN -iUDP -F pcnPtT 2>/dev/null)
+            used_sudo=1
+        else
+            lsof_raw=$(lsof -nP -iTCP -sTCP:LISTEN -iUDP -F pcnPtT 2>/dev/null)
+        fi
+        raw_data=$(echo "$lsof_raw" | awk '
+            /^p/ { pid = substr($0, 2); next }
+            /^c/ { cmd = substr($0, 2); next }
+            /^t/ { type = substr($0, 2); next }
+            /^P/ { proto = tolower(substr($0, 2)); next }
+            /^T/ { if (substr($0, 1, 4) == "TST=") state = substr($0, 5); next }
+            /^n/ {
+                addr_port = substr($0, 2)
+                if (addr_port ~ /->/ || addr_port ~ /:\*$/) next
+                st = (proto == "tcp" ? (state ? state : "LISTEN") : "UNCONN")
+                if (type == "IPv6" && addr_port ~ /^\*:/) {
+                    sub(/^\*:/, "[::]:", addr_port)
+                }
+                key = proto SUBSEP addr_port SUBSEP pid
+                if (!seen[key]++) {
+                    printf "%-5s %-7s 0 0 %-25s *:* users:((\"%s\",pid=%s))\n", proto, st, addr_port, (cmd ? cmd : "-"), pid
+                }
+                state = ""
+            }
+        ')
     else
         if sudo -n netstat -tunlp >/dev/null 2>&1; then
             raw_data=$(sudo netstat -tunlp 2>/dev/null)
