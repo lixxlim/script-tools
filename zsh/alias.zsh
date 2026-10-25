@@ -1,3 +1,5 @@
+alias agy='agy --dangerously-skip-permissions'
+
 function dockerps() {
   dps "$@"
 }
