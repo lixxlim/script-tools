@@ -1,31 +1,8 @@
 /**
- * Google Chat notification scheduler.
+ * Google Chat notification scheduler - Methods
  *
- * In CHAT_SCHEDULER_CONFIG, set the spreadsheet ID, sheet name, and Google Chat incoming-webhook URL.
- * If sheetName is null or empty, the first sheet (tab) in the spreadsheet is used.
+ * Settings are defined in google-chat-notification-scheduler-config.gs.
  */
-const CHAT_SCHEDULER_CONFIG = {
-  // Spreadsheet URL의 /d/와 /edit 사이의 ID를 입력하세요.
-  spreadsheetId: 'REPLACE_WITH_SPREADSHEET_ID',
-  // 알림 목록이 있는 시트 탭 이름 (null 또는 비워두면 맨 앞 첫 번째 탭 사용)
-  sheetName: null,
-  // 알림을 수신할 Google Chat 웹훅 URL
-  chatWebhookUrl: 'REPLACE_WITH_GOOGLE_CHAT_WEBHOOK_URL',
-  // null로 설정 시 스프레드시트의 타임존을 따르며, 필요 시 'Asia/Seoul'처럼 명시할 수 있습니다.
-  timeZone: null,
-  // 실행을 허용할 시간 범위 (24시간제 기준, 9시부터 18시까지)
-  activeHours: {
-    start: 9,  // 시작 시간 (09:00)
-    end: 18,   // 종료 시간 (18:00)
-  },
-};
-
-const CHAT_SCHEDULER_COLUMN = {
-  DONE: 1,         // A열 (완료 여부 체크박스)
-  NOTICE_DATE: 2,  // B열 (예약 날짜: YYYY-MM-DD 또는 Date 형식)
-  NOTICE_TIME: 3,  // C열 (예약 시간: HH:mm 또는 Time 형식)
-  NOTICE_TEXT: 4,  // D열 (메시지 내용)
-};
 
 /**
  * Checks all data rows and sends notifications due up to the current time.
@@ -78,17 +55,13 @@ function checkScheduledNotices() {
         return;
       }
 
-      // 예약 일시 파싱 (타임존을 정확히 반영)
-      const scheduledDateTime = parseScheduledDateTime_(noticeDate, noticeTime, timezone);
-      if (!scheduledDateTime) {
-        return;
-      }
-
-      // 예약 시간이 현재 시각 이전이거나 같으면 발송
-      if (scheduledDateTime <= now) {
-        sendSchedulerChatMessage_(String(noticeText));
+      // 발송 예정 시점 도달 여부 판별 (날짜만 / 시간만 / 둘 다 있는 경우 모두 처리)
+      if (isNoticeDue_(noticeDate, noticeTime, now, timezone)) {
+        sendSchedulerChatMessage_(String(noticeText), spreadsheet, sheet);
         // 발송 성공 후 완료(true) 처리
         sheet.getRange(rowNumber, CHAT_SCHEDULER_COLUMN.DONE).setValue(true);
+        // 연속 발송 시 웹훅 안정성을 위한 딜레이
+        Utilities.sleep(150);
       }
     });
   } finally {
@@ -108,14 +81,14 @@ function createHourlyTrigger() {
     .create();
 }
 
-/** Google Chat 웹훅으로 카드(Card v2) 포맷 메시지 전송 */
-function sendSchedulerChatMessage_(rawText) {
-  const payload = buildSchedulerChatMessagePayload_(rawText);
+/** Google Chat 웹훅으로 단일 일반 텍스트 메시지 전송 */
+function sendSchedulerChatMessage_(rawText, spreadsheet, currentSheet) {
+  const formattedText = formatSchedulerMessageText_(rawText, spreadsheet, currentSheet);
 
   const response = UrlFetchApp.fetch(CHAT_SCHEDULER_CONFIG.chatWebhookUrl, {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify(payload),
+    payload: JSON.stringify({ text: formattedText }),
     muteHttpExceptions: true,
   });
   const status = response.getResponseCode();
@@ -125,84 +98,153 @@ function sendSchedulerChatMessage_(rawText) {
 }
 
 /**
- * 텍스트 가공 및 Google Chat Card v2 페이로드 빌드
- * - @전원, @all -> <users/all> 변환
- * - [red]문구[/red] -> <font color="#d93025">문구</font> 변환
- * - [blue]문구[/blue] -> <font color="#1a73e8">문구</font> 변환
- * - [green]문구[/green] -> <font color="#1e8e3e">문구</font> 변환
- * - **문구** -> <b>문구</b> 변환
- * - __문구__ -> <u>문구</u> 변환
- * - 줄바꿈(\n) -> <br> 변환
+ * 일반 텍스트 모드 포맷팅 함수
+ * - @전원, @all, @全員 -> <users/all> 변환
+ * - {{시트명!A1:C5}} 또는 {{A1:B2}} -> 스프레드시트 영역 실시간 데이터 치환
+ * - <link>URL</link> -> <URL> 링크 변환
+ * - [텍스트](URL) -> <URL|텍스트> 구글 챗 링크 변환
+ * - **문구** -> *문구* (구글 챗 굵게 문법)
+ * - [red]문구[/red] -> 🔴 *문구* (일반 텍스트 강조 이모지)
+ * - [blue]문구[/blue] -> 🔵 *문구*
+ * - [green]문구[/green] -> 🟢 *문구*
+ * - __문구__ -> _문구_ (기울임 강조)
  */
-function buildSchedulerChatMessagePayload_(rawText) {
-  let processed = rawText
-    // 1. 전원 멘션 치환
-    .replace(/@전원|@all/g, '<users/all>')
-    // 2. 색상 태그 단축 문법 지원
-    .replace(/\[red\](.*?)\[\/red\]/gi, '<font color="#d93025">$1</font>')
-    .replace(/\[blue\](.*?)\[\/blue\]/gi, '<font color="#1a73e8">$1</font>')
-    .replace(/\[green\](.*?)\[\/green\]/gi, '<font color="#1e8e3e">$1</font>')
-    // 3. 마크다운 스타일 단축 문법 지원
-    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-    .replace(/__(.*?)__/g, '<u>$1</u>')
-    // 4. 줄바꿈 지원
-    .replace(/\n/g, '<br>');
+function formatSchedulerMessageText_(rawText, spreadsheet, currentSheet) {
+  // 1. 스프레드시트 셀/범위 참조 치환 (예: {{당번표!A1:C5}}, {{B2}})
+  let text = replaceSheetRangePlaceholders_(rawText, spreadsheet, currentSheet);
 
-  const hasAllMention = /<users\/all>/.test(processed);
-
-  return {
-    // 멘션 노티가 팝업/뱃지로 정상 울리도록 최상위 text에도 포함
-    text: hasAllMention ? '<users/all>' : '',
-    cardsV2: [
-      {
-        cardId: 'notice-' + Date.now(),
-        card: {
-          sections: [
-            {
-              widgets: [
-                {
-                  textParagraph: {
-                    text: processed,
-                  },
-                },
-              ],
-            },
-          ],
-        },
-      },
-    ],
-  };
+  return text
+    // 2. 전원 멘션 치환 (한국어, 영어, 일본어 모두 지원)
+    .replace(/@전원|@all|@全員/g, '<users/all>')
+    // 3. 링크 치환 (구글 챗 일반 텍스트 링크 규격: <URL|텍스트>)
+    .replace(/<link>(.*?)<\/link>/gi, '<$1>')
+    .replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<$2|$1>')
+    // 4. 색상 태그 -> 이모지 및 볼드로 자연스럽게 대체
+    .replace(/\[red\](.*?)\[\/red\]/gi, '🔴 *$1*')
+    .replace(/\[blue\](.*?)\[\/blue\]/gi, '🔵 *$1*')
+    .replace(/\[green\](.*?)\[\/green\]/gi, '🟢 *$1*')
+    // 5. 볼드 및 강조 처리 (** -> * 변환)
+    .replace(/\*\*(.*?)\*\*/g, '*$1*')
+    .replace(/__(.*?)__/g, '_$1_');
 }
 
-/** 날짜와 시간을 조합하여 지정된 타임존 기준 Date 객체로 변환 */
-function parseScheduledDateTime_(dateVal, timeVal, timezone) {
-  if (!dateVal || !timeVal) {
-    return null;
+/**
+ * {{시트명!A1:C5}} 형태의 태그를 실제 스프레드시트 데이터로 치환
+ */
+function replaceSheetRangePlaceholders_(rawText, spreadsheet, currentSheet) {
+  if (!spreadsheet) {
+    return rawText;
   }
 
-  const dateStr = (dateVal instanceof Date && !isNaN(dateVal))
-    ? Utilities.formatDate(dateVal, timezone, 'yyyy-MM-dd')
-    : String(dateVal).trim();
+  return rawText.replace(/\{\{(.*?)\}\}/g, (match, expr) => {
+    const expression = expr.trim();
+    if (!expression) return match;
 
-  let timeStr = '';
-  if (timeVal instanceof Date && !isNaN(timeVal)) {
-    timeStr = Utilities.formatDate(timeVal, timezone, 'HH:mm');
-  } else {
-    timeStr = String(timeVal).trim();
+    let targetSheet = currentSheet;
+    let rangeA1 = expression;
+
+    // "시트명!범위" 파싱
+    if (expression.includes('!')) {
+      const parts = expression.split('!');
+      const sheetName = parts[0].trim().replace(/^['"]|['"]$/g, '');
+      rangeA1 = parts[1].trim();
+      targetSheet = spreadsheet.getSheetByName(sheetName);
+      if (!targetSheet) {
+        return `[시트 '${sheetName}'을(를) 찾을 수 없음]`;
+      }
+    }
+
+    try {
+      const range = targetSheet.getRange(rangeA1);
+      // 화면에 표시된 서식 그대로 가져옴 (날짜 포맷, 통화, 숫자 등 유지)
+      const displayValues = range.getDisplayValues();
+
+      // 단일 셀인 경우: 해당 값 문자열만 그대로 삽입
+      if (displayValues.length === 1 && displayValues[0].length === 1) {
+        return displayValues[0][0];
+      }
+
+      // 다중 셀(표)인 경우: 코드 블록으로 감싸 정렬된 표 형태로 출력
+      const lines = displayValues.map(row => row.join(' | '));
+      return '```\n' + lines.join('\n') + '\n```';
+    } catch (e) {
+      return `[범위 '${rangeA1}' 오류]`;
+    }
+  });
+}
+
+/**
+ * 예약 일시 도달 여부 판정
+ * 1. 날짜 + 시간 모두 있음: 예약 일시 <= 현재 일시 이면 발송
+ * 2. 날짜만 있음: 시간 무시, 예약 날짜 <= 오늘 날짜 이면 발송
+ * 3. 시간만 있음: 날짜 무시, 예약 시간 <= 현재 시각 이면 발송
+ */
+function isNoticeDue_(dateVal, timeVal, now, timezone) {
+  const dateStr = formatDateString_(dateVal, timezone);
+  const timeStr = formatTimeString_(timeVal, timezone);
+
+  const hasDate = Boolean(dateStr);
+  const hasTime = Boolean(timeStr);
+
+  // 둘 다 비어있는 경우 스킵
+  if (!hasDate && !hasTime) {
+    return false;
   }
 
-  // 1자리 시간(예: 9:05) 지원을 위한 0 패딩 처리
-  const parts = timeStr.split(':');
-  if (parts.length === 2) {
-    timeStr = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+  const todayStr = Utilities.formatDate(now, timezone, 'yyyy-MM-dd');
+  const currentTimeStr = Utilities.formatDate(now, timezone, 'HH:mm');
+
+  // 1. 날짜 + 시간 모두 입력된 경우
+  if (hasDate && hasTime) {
+    try {
+      const scheduledDateTime = Utilities.parseDate(`${dateStr} ${timeStr}`, timezone, 'yyyy-MM-dd HH:mm');
+      return scheduledDateTime && scheduledDateTime <= now;
+    } catch (e) {
+      return false;
+    }
   }
 
-  try {
-    // 지정된 타임존 기준으로 안전하게 파싱
-    return Utilities.parseDate(`${dateStr} ${timeStr}`, timezone, 'yyyy-MM-dd HH:mm');
-  } catch (e) {
-    return null;
+  // 2. 날짜만 입력된 경우: 오늘 또는 과거일이면 발송
+  if (hasDate && !hasTime) {
+    return dateStr <= todayStr;
   }
+
+  // 3. 시간만 입력된 경우: 현재 시각 또는 이미 지난 시각이면 발송
+  if (!hasDate && hasTime) {
+    return timeStr <= currentTimeStr;
+  }
+
+  return false;
+}
+
+/** 날짜 값을 'yyyy-MM-dd' 문자열로 정규화 */
+function formatDateString_(value, timezone) {
+  if (!value) return '';
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, timezone, 'yyyy-MM-dd');
+  }
+  const str = String(value).trim();
+  const match = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (match) {
+    const [_, y, m, d] = match;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+  return '';
+}
+
+/** 시간 값을 'HH:mm' 문자열로 정규화 */
+function formatTimeString_(value, timezone) {
+  if (!value) return '';
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, timezone, 'HH:mm');
+  }
+  const str = String(value).trim();
+  const match = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (match) {
+    const [_, h, m] = match;
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+  return '';
 }
 
 function validateSchedulerConfig_() {

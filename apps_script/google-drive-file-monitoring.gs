@@ -1,55 +1,10 @@
 /**
  * ============================================
- * Google Drive 파일 모니터링 시스템 (스프레드시트 DB 연동)
+ * Google Drive 파일 모니터링 시스템 - 메서드 (Methods)
  * ============================================
  *
- * 감시 대상:
- * 1. 지정된 Google Drive 폴더 및 모든 하위 폴더
- *
- * 감지 항목:
- * 1. 신규 파일 추가 (NEW)
- * 2. 기존 파일 수정 (UPDATED)
- * 3. 파일명 변경 (RENAMED)
- * 4. 파일 위치(폴더) 변경 (MOVED)
- *
- * 상태 저장:
- * - Google 스프레드시트를 데이터베이스로 활용하여 9KB 용량 제한 없이 대용량 파일 관리
- * - A열: 파일 ID (고유 식별자)
- * - B열: 파일명
- * - C열: 폴더 경로
- * - D열: 최종 수정일시
- * - E열: 파일 형식 (MIME Type)
- * - F열: 소유자 (등록자)
- * - G열: 파일 바로가기 링크
- * - H열: 최근 감지 상태
- *
- * 알림:
- * - Google Chat Incoming Webhook (Card v2 포맷)
+ * 설정값은 google-drive-file-monitoring-config.gs 에 정의되어 있습니다.
  */
-
-const DRIVE_MONITOR_CONFIG = {
-  // 감시할 Google Drive 폴더 ID
-  folderId: 'YOUR_FOLDER_ID',
-  // 파일 상태를 저장할 Google 스프레드시트 ID
-  spreadsheetId: 'YOUR_SPREADSHEET_ID',
-  // 상태를 기록할 시트 탭 이름 (null이면 첫 번째 탭 사용)
-  sheetName: '드라이브_모니터링',
-  // 알림을 수신할 Google Chat 웹훅 URL
-  chatWebhookUrl: 'YOUR_CHAT_WEBHOOK_URL',
-  // 타임존 (null이면 스프레드시트 타임존 자동 적용)
-  timeZone: null,
-};
-
-const DRIVE_MONITOR_SHEET_HEADERS = [
-  '파일 ID',
-  '파일명',
-  '폴더 경로',
-  '최종 수정일시',
-  '파일 형식',
-  '소유자',
-  '파일 링크',
-  '최근 상태'
-];
 
 /**
  * ============================================
@@ -114,10 +69,10 @@ function checkDriveChanges() {
     const sheet = getOrCreateMonitoringSheet_();
     const timezone = getDriveMonitorTimeZone_();
 
-    // 1. 스프레드시트에 저장된 이전 상태 읽기 (메모리 캐싱)
-    const knownFiles = loadKnownFilesFromSheet_(sheet);
+    // 1. 스프레드시트에 저장된 이전 상태 읽기 (타임존 보정 및 초 단위 변환)
+    const knownFiles = loadKnownFilesFromSheet_(sheet, timezone);
 
-    // 2. 현재 드라이브 상태 재귀 스캔
+    // 2. 현재 드라이브 상태 재귀 스캔 (초 단위 정수 타임스탬프 저장)
     const currentFiles = {};
     scanFolderRecursively_(folder, '', currentFiles, timezone);
 
@@ -131,7 +86,7 @@ function checkDriveChanges() {
       const previous = knownFiles[fileId];
 
       if (!previous) {
-        // [신규 파일 추가]
+        // [신규 파일 추가] (시트가 비어있으면 전체 발송)
         newCount++;
         sendDriveNoticeChat_({
           type: 'NEW',
@@ -152,15 +107,20 @@ function checkDriveChanges() {
 
         Utilities.sleep(150); // 웹훅 연속 호출 속도 조절
       } else {
-        // [기존 파일 비교: 최종 수정일시 변경 여부]
-        if (current.lastModifiedTime > previous.lastModifiedTime) {
+        // [기존 파일 비교: 초 단위 정수 비교로 밀리초 오차 제거]
+        const isTimeUpdated = current.lastModifiedSeconds > previous.lastModifiedSeconds;
+        const isRenamed = previous.name !== current.name;
+        const isMoved = previous.folderPath !== current.folderPath;
+
+        // 시간 갱신, 이름 변경, 위치 이동 중 하나라도 실제로 일어났을 때만 알림
+        if (isTimeUpdated || isRenamed || isMoved) {
           let changeType = 'UPDATED';
           let title = '📝 파일이 수정되었습니다.';
 
-          if (previous.name !== current.name) {
+          if (isRenamed) {
             changeType = 'RENAMED';
             title = '✏️ 파일명이 변경되었습니다.';
-          } else if (previous.folderPath !== current.folderPath) {
+          } else if (isMoved) {
             changeType = 'MOVED';
             title = '📂 파일 위치(폴더)가 변경되었습니다.';
           }
@@ -236,7 +196,8 @@ function scanFolderRecursively_(folder, parentPath, filesMap, timezone) {
       id: fileId,
       name: file.getName(),
       folderPath: currentPath,
-      lastModifiedTime: lastUpdated.getTime(),
+      // 밀리초 오차를 없애기 위해 초(Seconds) 단위 정수로 저장
+      lastModifiedSeconds: Math.floor(lastUpdated.getTime() / 1000),
       lastModifiedStr: Utilities.formatDate(lastUpdated, timezone, 'yyyy-MM-dd HH:mm:ss'),
       mimeType: simplifyMimeType_(file.getMimeType()),
       owner: ownerStr,
@@ -251,8 +212,8 @@ function scanFolderRecursively_(folder, parentPath, filesMap, timezone) {
   }
 }
 
-/** 시트에 기록된 기존 파일 목록 로드 */
-function loadKnownFilesFromSheet_(sheet) {
+/** 시트에 기록된 기존 파일 목록 로드 (Date 객체/문자열 및 타임존 완벽 보정) */
+function loadKnownFilesFromSheet_(sheet, timezone) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) {
     return {};
@@ -262,19 +223,37 @@ function loadKnownFilesFromSheet_(sheet) {
   const known = {};
 
   values.forEach((row, index) => {
-    const [id, name, folderPath, lastModifiedStr, mimeType, owner, url, status] = row;
+    const [id, name, folderPath, lastModifiedVal, mimeType, owner, url, status] = row;
     if (!id) return;
 
-    const parsedDate = new Date(lastModifiedStr);
-    const timeMs = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : 0;
+    let lastModifiedStr = '';
+    let lastModifiedSeconds = 0;
 
-    known[id] = {
+    // 시트 셀 값이 Date 객체인 경우
+    if (lastModifiedVal instanceof Date && !isNaN(lastModifiedVal.getTime())) {
+      lastModifiedStr = Utilities.formatDate(lastModifiedVal, timezone, 'yyyy-MM-dd HH:mm:ss');
+      lastModifiedSeconds = Math.floor(lastModifiedVal.getTime() / 1000);
+    } else if (lastModifiedVal) {
+      // 시트 셀 값이 문자열인 경우 타임존 기준 파싱
+      lastModifiedStr = String(lastModifiedVal).trim();
+      const parsed = Utilities.parseDate(lastModifiedStr, timezone, 'yyyy-MM-dd HH:mm:ss');
+      if (parsed && !isNaN(parsed.getTime())) {
+        lastModifiedSeconds = Math.floor(parsed.getTime() / 1000);
+      } else {
+        const fallback = new Date(lastModifiedStr);
+        if (!isNaN(fallback.getTime())) {
+          lastModifiedSeconds = Math.floor(fallback.getTime() / 1000);
+        }
+      }
+    }
+
+    known[String(id)] = {
       rowNumber: index + 2, // 실제 시트 행 번호
       id: String(id),
       name: String(name),
       folderPath: String(folderPath),
-      lastModifiedTime: timeMs,
-      lastModifiedStr: String(lastModifiedStr),
+      lastModifiedSeconds: lastModifiedSeconds,
+      lastModifiedStr: lastModifiedStr,
       mimeType: String(mimeType),
       owner: String(owner),
       url: String(url),
